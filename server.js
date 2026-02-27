@@ -145,6 +145,64 @@ function buildEmailHTML({ name, student_name, registrationId }) {
   `;
 }
 
+// GET /admin/registrations — returns all registrations (password protected)
+app.get('/admin/registrations', async (req, res) => {
+  const { password } = req.query;
+  if (password !== process.env.ADMIN_PASSWORD) {
+    return res.status(401).json({ error: 'No autorizado.' });
+  }
+
+  const { data, error } = await supabase
+    .from('registrations')
+    .select('*')
+    .order('created_at', { ascending: false });
+
+  if (error) return res.status(500).json({ error: 'Error al obtener registros.' });
+  return res.status(200).json(data);
+});
+
+// POST /verify — scans QR, verifies registration, marks checked_in
+app.post('/verify', async (req, res) => {
+  const { id, password } = req.body;
+
+  if (password !== process.env.ADMIN_PASSWORD) {
+    return res.status(401).json({ error: 'No autorizado.' });
+  }
+
+  if (!id) return res.status(400).json({ error: 'ID requerido.' });
+
+  // Look up registration
+  const { data, error } = await supabase
+    .from('registrations')
+    .select('*')
+    .eq('id', id)
+    .single();
+
+  if (error || !data) {
+    return res.status(404).json({ status: 'not_found', message: 'Registro no encontrado.' });
+  }
+
+  if (data.checked_in) {
+    return res.status(200).json({
+      status: 'already_checked_in',
+      message: 'Ya ingresó al evento.',
+      registration: data
+    });
+  }
+
+  // Mark as checked in
+  await supabase
+    .from('registrations')
+    .update({ checked_in: true, checked_in_at: new Date().toISOString() })
+    .eq('id', id);
+
+  return res.status(200).json({
+    status: 'success',
+    message: '¡Acceso válido!',
+    registration: data
+  });
+});
+
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`✅ Kids Kermesse server running on http://localhost:${PORT}`);

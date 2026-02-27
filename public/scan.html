@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Kids Kermesse — Puerta</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html5-qrcode/2.3.8/html5-qrcode.min.js"></script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: #1a1a2e;
+      min-height: 100vh;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      padding: 24px; color: white;
+    }
+
+    /* Login */
+    .login-card {
+      background: #ffffff10; border-radius: 20px; padding: 36px;
+      max-width: 360px; width: 100%; text-align: center;
+    }
+    .login-card h1 { font-size: 20px; font-weight: 800; margin-bottom: 6px; }
+    .login-card p { color: #aaa; font-size: 14px; margin-bottom: 24px; }
+    .login-card input {
+      width: 100%; padding: 14px 16px; border: 2px solid #ffffff20;
+      border-radius: 12px; font-size: 15px; background: #ffffff10;
+      color: white; outline: none; margin-bottom: 12px;
+    }
+    .login-card input::placeholder { color: #aaa; }
+    .login-card input:focus { border-color: #ff6b35; }
+    .login-card button {
+      width: 100%; padding: 14px; background: #ff6b35; color: white;
+      border: none; border-radius: 12px; font-size: 15px; font-weight: 700; cursor: pointer;
+    }
+    .login-error { color: #e74c3c; font-size: 13px; margin-top: 10px; display: none; }
+
+    /* Scanner */
+    .scanner-view { display: none; width: 100%; max-width: 420px; text-align: center; }
+    .scanner-header { margin-bottom: 20px; }
+    .scanner-header h1 { font-size: 20px; font-weight: 800; }
+    .scanner-header p { color: #aaa; font-size: 13px; margin-top: 4px; }
+
+    #reader {
+      border-radius: 16px; overflow: hidden;
+      border: 3px solid #ff6b35;
+      width: 100% !important;
+    }
+
+    /* Result overlay */
+    .result {
+      display: none; position: fixed; inset: 0;
+      align-items: center; justify-content: center;
+      padding: 24px; z-index: 100;
+    }
+    .result.success { background: rgba(39, 174, 96, 0.95); }
+    .result.already { background: rgba(243, 156, 18, 0.95); }
+    .result.error { background: rgba(231, 76, 60, 0.95); }
+
+    .result-card { text-align: center; max-width: 320px; width: 100%; }
+    .result-icon { font-size: 72px; margin-bottom: 16px; }
+    .result-title { font-size: 28px; font-weight: 800; margin-bottom: 8px; }
+    .result-name { font-size: 20px; font-weight: 700; margin-bottom: 4px; }
+    .result-sub { font-size: 15px; opacity: 0.85; margin-bottom: 32px; }
+    .result-btn {
+      background: white; color: #1a1a2e; border: none;
+      padding: 16px 32px; border-radius: 12px;
+      font-size: 16px; font-weight: 700; cursor: pointer; width: 100%;
+    }
+
+    .admin-link {
+      margin-top: 24px; color: #aaa; font-size: 13px; text-decoration: none;
+    }
+    .admin-link:hover { color: white; }
+  </style>
+</head>
+<body>
+
+  <!-- Login -->
+  <div class="login-card" id="login-card">
+    <div style="font-size:40px; margin-bottom:12px;">📷</div>
+    <h1>Escaneo en Puerta</h1>
+    <p>Kids Kermesse — Acceso personal autorizado</p>
+    <input type="password" id="pw" placeholder="Contraseña" />
+    <button onclick="startScanner()">Abrir cámara</button>
+    <p class="login-error" id="login-error">Contraseña incorrecta</p>
+  </div>
+
+  <!-- Scanner -->
+  <div class="scanner-view" id="scanner-view">
+    <div class="scanner-header">
+      <h1>📷 Escanear QR</h1>
+      <p>Apunta la cámara al código del asistente</p>
+    </div>
+    <div id="reader"></div>
+    <a class="admin-link" href="/admin.html">← Ver todos los registros</a>
+  </div>
+
+  <!-- Result overlay -->
+  <div class="result" id="result-overlay">
+    <div class="result-card">
+      <div class="result-icon" id="result-icon"></div>
+      <div class="result-title" id="result-title"></div>
+      <div class="result-name" id="result-name"></div>
+      <div class="result-sub" id="result-sub"></div>
+      <button class="result-btn" onclick="dismissResult()">Escanear siguiente →</button>
+    </div>
+  </div>
+
+  <script>
+    const API = 'https://kidskermese-production.up.railway.app';
+    let savedPassword = '';
+    let scanner = null;
+    let scanning = true;
+
+    document.getElementById('pw').addEventListener('keydown', e => {
+      if (e.key === 'Enter') startScanner();
+    });
+
+    function startScanner() {
+      savedPassword = document.getElementById('pw').value;
+      if (!savedPassword) return;
+      document.getElementById('login-card').style.display = 'none';
+      document.getElementById('scanner-view').style.display = 'block';
+
+      scanner = new Html5Qrcode("reader");
+      scanner.start(
+        { facingMode: "environment" }, // use back camera on mobile
+        { fps: 10, qrbox: { width: 250, height: 250 } },
+        onScanSuccess,
+        () => {} // ignore scan errors silently
+      );
+    }
+
+    async function onScanSuccess(qrId) {
+      if (!scanning) return;
+      scanning = false; // prevent double scans
+
+      try {
+        const res = await fetch(`${API}/verify`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id: qrId, password: savedPassword })
+        });
+
+        const data = await res.json();
+
+        if (res.status === 401) {
+          showResult('error', '🚫', 'No autorizado', '', 'Contraseña incorrecta');
+          return;
+        }
+
+        if (data.status === 'success') {
+          showResult('success', '✅', '¡Acceso válido!',
+            data.registration.name,
+            `Estudiante: ${data.registration.student_name}`
+          );
+        } else if (data.status === 'already_checked_in') {
+          showResult('already', '⚠️', 'Ya ingresó',
+            data.registration.name,
+            `Este acceso ya fue utilizado`
+          );
+        } else {
+          showResult('error', '❌', 'No encontrado', '', 'QR no válido o no registrado');
+        }
+
+      } catch (err) {
+        showResult('error', '❌', 'Error de conexión', '', 'Intenta de nuevo');
+      }
+    }
+
+    function showResult(type, icon, title, name, sub) {
+      const overlay = document.getElementById('result-overlay');
+      overlay.className = `result ${type}`;
+      document.getElementById('result-icon').textContent = icon;
+      document.getElementById('result-title').textContent = title;
+      document.getElementById('result-name').textContent = name;
+      document.getElementById('result-sub').textContent = sub;
+      overlay.style.display = 'flex';
+    }
+
+    function dismissResult() {
+      document.getElementById('result-overlay').style.display = 'none';
+      scanning = true; // ready for next scan
+    }
+  </script>
+
+</body>
+</html>
