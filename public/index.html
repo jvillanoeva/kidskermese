@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Kids Kermesse — Registro</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: #fff8f0;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+    }
+
+    .card {
+      background: #ffffff;
+      border-radius: 24px;
+      padding: 48px 40px;
+      max-width: 480px;
+      width: 100%;
+      box-shadow: 0 8px 40px rgba(0,0,0,0.08);
+      text-align: center;
+    }
+
+    .emoji-header {
+      font-size: 52px;
+      margin-bottom: 12px;
+    }
+
+    h1 {
+      font-size: 28px;
+      font-weight: 800;
+      color: #1a1a2e;
+      margin-bottom: 6px;
+    }
+
+    .subtitle {
+      font-size: 15px;
+      color: #888;
+      margin-bottom: 32px;
+    }
+
+    .form-group {
+      text-align: left;
+      margin-bottom: 20px;
+    }
+
+    label {
+      display: block;
+      font-size: 13px;
+      font-weight: 600;
+      color: #555;
+      margin-bottom: 6px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    input {
+      width: 100%;
+      padding: 14px 16px;
+      border: 2px solid #e8e8e8;
+      border-radius: 12px;
+      font-size: 15px;
+      color: #1a1a2e;
+      transition: border-color 0.2s;
+      outline: none;
+      background: #fafafa;
+    }
+
+    input:focus {
+      border-color: #ff6b35;
+      background: #fff;
+    }
+
+    button[type="submit"] {
+      width: 100%;
+      padding: 16px;
+      background: #ff6b35;
+      color: white;
+      border: none;
+      border-radius: 12px;
+      font-size: 16px;
+      font-weight: 700;
+      cursor: pointer;
+      margin-top: 8px;
+      transition: background 0.2s, transform 0.1s;
+    }
+
+    button[type="submit"]:hover {
+      background: #e85a25;
+    }
+
+    button[type="submit"]:active {
+      transform: scale(0.98);
+    }
+
+    button[type="submit"]:disabled {
+      background: #ccc;
+      cursor: not-allowed;
+    }
+
+    .success {
+      display: none;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .success-icon {
+      font-size: 64px;
+      margin-bottom: 16px;
+    }
+
+    .success h2 {
+      font-size: 24px;
+      font-weight: 800;
+      color: #1a1a2e;
+      margin-bottom: 8px;
+    }
+
+    .success p {
+      font-size: 15px;
+      color: #888;
+      line-height: 1.6;
+    }
+
+    .success p strong {
+      color: #ff6b35;
+    }
+
+    .error-msg {
+      color: #e74c3c;
+      font-size: 13px;
+      margin-top: 12px;
+      display: none;
+    }
+
+    .badge {
+      display: inline-block;
+      background: #fff0e8;
+      color: #ff6b35;
+      font-size: 12px;
+      font-weight: 700;
+      padding: 4px 12px;
+      border-radius: 99px;
+      margin-bottom: 20px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    .divider {
+      border: none;
+      border-top: 1px solid #f0f0f0;
+      margin: 28px 0;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="card">
+
+    <!-- Registration form -->
+    <div id="form-view">
+      <div class="emoji-header">🎪</div>
+      <div class="badge">Evento Gratuito</div>
+      <h1>Kids Kermesse</h1>
+      <p class="subtitle">Regístrate y recibe tu acceso por correo</p>
+
+      <form id="register-form">
+        <div class="form-group">
+          <label for="name">Tu nombre</label>
+          <input type="text" id="name" name="name" placeholder="Nombre completo" required />
+        </div>
+
+        <div class="form-group">
+          <label for="student_name">Nombre del estudiante</label>
+          <input type="text" id="student_name" name="student_name" placeholder="Nombre del niño / niña" required />
+        </div>
+
+        <div class="form-group">
+          <label for="email">Correo electrónico</label>
+          <input type="email" id="email" name="email" placeholder="correo@ejemplo.com" required />
+        </div>
+
+        <button type="submit" id="submit-btn">Registrarme →</button>
+        <p class="error-msg" id="error-msg">Algo salió mal. Por favor intenta de nuevo.</p>
+      </form>
+    </div>
+
+    <!-- Success state -->
+    <div class="success" id="success-view">
+      <div class="success-icon">🎉</div>
+      <h2>¡Listo, <span id="success-name"></span>!</h2>
+      <hr class="divider" />
+      <p>Te enviamos un correo a <strong id="success-email"></strong> con tu código QR de acceso.</p>
+      <br/>
+      <p style="font-size:13px; color:#aaa;">Preséntalo en la entrada el día del evento.</p>
+    </div>
+
+  </div>
+
+  <script>
+    const form = document.getElementById('register-form');
+    const submitBtn = document.getElementById('submit-btn');
+    const formView = document.getElementById('form-view');
+    const successView = document.getElementById('success-view');
+    const errorMsg = document.getElementById('error-msg');
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'Enviando...';
+      errorMsg.style.display = 'none';
+
+      const payload = {
+        name: document.getElementById('name').value.trim(),
+        student_name: document.getElementById('student_name').value.trim(),
+        email: document.getElementById('email').value.trim()
+      };
+
+      try {
+        const res = await fetch('/register', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+
+        const data = await res.json();
+
+        if (!res.ok) throw new Error(data.error || 'Error');
+
+        // Show success
+        document.getElementById('success-name').textContent = payload.name.split(' ')[0];
+        document.getElementById('success-email').textContent = payload.email;
+        formView.style.display = 'none';
+        successView.style.display = 'flex';
+
+      } catch (err) {
+        errorMsg.style.display = 'block';
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Registrarme →';
+      }
+    });
+  </script>
+
+</body>
+</html>
