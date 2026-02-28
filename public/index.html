@@ -187,7 +187,7 @@
           <input type="email" id="email" name="email" placeholder="correo@ejemplo.com" required />
         </div>
 
-        <button type="submit" id="submit-btn">Registrarme →</button>
+        <button type="submit" id="submit-btn">Pagar y registrarme →</button>
         <p class="error-msg" id="error-msg">Algo salió mal. Por favor intenta de nuevo.</p>
       </form>
     </div>
@@ -214,7 +214,7 @@
     form.addEventListener('submit', async (e) => {
       e.preventDefault();
       submitBtn.disabled = true;
-      submitBtn.textContent = 'Enviando...';
+      submitBtn.textContent = 'Redirigiendo al pago...';
       errorMsg.style.display = 'none';
 
       const payload = {
@@ -224,7 +224,7 @@
       };
 
       try {
-        const res = await fetch('https://kidskermese-production.up.railway.app/register', {
+        const res = await fetch('https://kidskermese-production.up.railway.app/create-checkout', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload)
@@ -234,11 +234,8 @@
 
         if (!res.ok) throw new Error(data.error || 'Error');
 
-        // Show success
-        document.getElementById('success-name').textContent = payload.name.split(' ')[0];
-        document.getElementById('success-email').textContent = payload.email;
-        formView.style.display = 'none';
-        successView.style.display = 'flex';
+        // Redirect to Stripe checkout
+        window.location.href = data.url;
 
       } catch (err) {
         errorMsg.style.display = 'block';

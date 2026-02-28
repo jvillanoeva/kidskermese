@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Kids Kermesse — Pago exitoso</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: #fff8f0; min-height: 100vh;
+      display: flex; align-items: center; justify-content: center; padding: 24px;
+    }
+    .card {
+      background: white; border-radius: 24px; padding: 48px 40px;
+      max-width: 480px; width: 100%;
+      box-shadow: 0 8px 40px rgba(0,0,0,0.08); text-align: center;
+    }
+    .icon { font-size: 64px; margin-bottom: 16px; }
+    h1 { font-size: 26px; font-weight: 800; color: #1a1a2e; margin-bottom: 8px; }
+    .sub { font-size: 15px; color: #888; line-height: 1.6; margin-bottom: 24px; }
+    .email-box {
+      background: #fff8f0; border-radius: 12px; padding: 16px 20px;
+      font-size: 15px; color: #ff6b35; font-weight: 700; margin-bottom: 24px;
+    }
+    .note { font-size: 13px; color: #aaa; }
+    .spinner {
+      display: inline-block; width: 32px; height: 32px;
+      border: 3px solid #f0f0f0; border-top-color: #ff6b35;
+      border-radius: 50%; animation: spin 0.8s linear infinite;
+      margin-bottom: 16px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .loading h1 { font-size: 18px; color: #888; font-weight: 600; }
+    .error h1 { color: #e74c3c; }
+    .error .sub { color: #e74c3c; }
+  </style>
+</head>
+<body>
+  <div class="card" id="card">
+    <!-- Loading state -->
+    <div id="loading">
+      <div class="spinner"></div>
+      <h1>Confirmando tu pago...</h1>
+    </div>
+  </div>
+
+  <script>
+    const API = 'https://kidskermese-production.up.railway.app';
+
+    async function confirmPayment() {
+      const params = new URLSearchParams(window.location.search);
+      const sessionId = params.get('session_id');
+
+      if (!sessionId) {
+        showError('No se encontró la sesión de pago.');
+        return;
+      }
+
+      try {
+        const res = await fetch(`${API}/confirm-payment`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ session_id: sessionId })
+        });
+
+        const data = await res.json();
+
+        if (!res.ok) {
+          showError(data.error || 'Error al confirmar el pago.');
+          return;
+        }
+
+        showSuccess(data.name, data.email);
+
+      } catch (err) {
+        showError('Error de conexión. Tu pago fue procesado pero hubo un error. Contáctanos.');
+      }
+    }
+
+    function showSuccess(name, email) {
+      document.getElementById('card').innerHTML = `
+        <div class="icon">🎉</div>
+        <h1>¡Listo, ${name.split(' ')[0]}!</h1>
+        <p class="sub">Tu pago fue confirmado. Te enviamos tu código QR de acceso a:</p>
+        <div class="email-box">${email}</div>
+        <p class="note">Preséntalo en la entrada el día del evento. Revisa también tu carpeta de spam.</p>
+      `;
+    }
+
+    function showError(msg) {
+      document.getElementById('card').innerHTML = `
+        <div class="error">
+          <div class="icon">⚠️</div>
+          <h1>Algo salió mal</h1>
+          <p class="sub">${msg}</p>
+        </div>
+      `;
+    }
+
+    confirmPayment();
+  </script>
+</body>
+</html>
