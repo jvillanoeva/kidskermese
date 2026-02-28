@@ -113,13 +113,8 @@ app.post('/confirm-payment', async (req, res) => {
     await resend.emails.send({
       from: process.env.RESEND_FROM_EMAIL,
       to: email,
-      subject: '🎪 Tu acceso a Kids Kermesse',
-      html: buildEmailHTML({ name, student_name, registrationId }),
-      attachments: [{
-        filename: 'acceso-kermesse.png',
-        content: qrBase64,
-        content_type: 'image/png'
-      }]
+      subject: '🎟️ Tu acceso — Aniversario Caballeros',
+      html: buildEmailHTML({ name, student_name, registrationId, qrDataURL })
     });
 
     return res.status(200).json({ success: true, name, email });
@@ -131,58 +126,59 @@ app.post('/confirm-payment', async (req, res) => {
 });
 
 // Email HTML template
-function buildEmailHTML({ name, student_name, registrationId }) {
+function buildEmailHTML({ name, student_name, registrationId, qrDataURL }) {
   return `
 <!DOCTYPE html>
 <html lang="es">
 <head>
   <meta charset="UTF-8"/>
   <style>
-    body { font-family: 'Segoe UI', Arial, sans-serif; background: #fff8f0; margin: 0; padding: 0; }
-    .container { max-width: 520px; margin: 40px auto; background: #ffffff; border-radius: 20px; overflow: hidden; box-shadow: 0 4px 20px rgba(0,0,0,0.08); }
-    .header { background: #ff6b35; padding: 36px 40px; text-align: center; }
-    .header h1 { color: white; font-size: 28px; margin: 0; font-weight: 800; }
-    .header p { color: rgba(255,255,255,0.85); font-size: 14px; margin-top: 6px; }
+    body { font-family: 'Segoe UI', Arial, sans-serif; background: #080808; margin: 0; padding: 0; }
+    .container { max-width: 520px; margin: 40px auto; background: #111111; border-radius: 16px; overflow: hidden; }
+    .header { background: #080808; padding: 40px; text-align: center; border-bottom: 1px solid #222; }
+    .header-tag { font-family: monospace; font-size: 10px; letter-spacing: 4px; color: #FF3B1F; text-transform: uppercase; margin-bottom: 12px; }
+    .header h1 { color: #f5f0e8; font-size: 32px; margin: 0; font-weight: 800; letter-spacing: -1px; }
+    .header p { color: #555; font-size: 13px; margin-top: 6px; font-family: monospace; letter-spacing: 2px; text-transform: uppercase; }
     .body { padding: 36px 40px; }
-    .greeting { font-size: 18px; font-weight: 700; color: #1a1a2e; margin-bottom: 12px; }
-    .info { font-size: 15px; color: #555; line-height: 1.7; margin-bottom: 24px; }
-    .detail-box { background: #fff8f0; border-radius: 12px; padding: 20px 24px; margin-bottom: 28px; }
-    .detail-box p { margin: 0; font-size: 14px; color: #888; }
-    .detail-box strong { color: #1a1a2e; }
-    .qr-section { text-align: center; margin-bottom: 28px; }
-    .qr-section p { font-size: 13px; color: #aaa; margin-top: 12px; }
-    .qr-img { width: 200px; height: 200px; border-radius: 12px; border: 3px solid #ff6b35; }
-    .footer { background: #fafafa; padding: 20px 40px; text-align: center; }
-    .footer p { font-size: 12px; color: #ccc; margin: 0; }
-    .id-code { font-family: monospace; font-size: 11px; color: #ccc; margin-top: 8px; word-break: break-all; }
+    .greeting { font-size: 17px; font-weight: 700; color: #f5f0e8; margin-bottom: 8px; }
+    .info { font-size: 14px; color: #888; line-height: 1.7; margin-bottom: 28px; }
+    .detail-box { background: #1a1a1a; border: 1px solid #222; border-radius: 8px; padding: 20px 24px; margin-bottom: 32px; }
+    .detail-box p { margin: 0 0 6px; font-size: 13px; color: #666; }
+    .detail-box p:last-child { margin-bottom: 0; }
+    .detail-box strong { color: #f5f0e8; }
+    .qr-section { text-align: center; margin-bottom: 32px; background: #1a1a1a; border: 1px solid #222; border-radius: 8px; padding: 32px; }
+    .qr-label { font-family: monospace; font-size: 10px; letter-spacing: 3px; color: #555; text-transform: uppercase; margin-bottom: 20px; }
+    .qr-img { width: 200px; height: 200px; border-radius: 8px; border: 3px solid #FF3B1F; display: block; margin: 0 auto; }
+    .qr-note { font-size: 12px; color: #555; margin-top: 16px; }
+    .footer { background: #080808; padding: 24px 40px; text-align: center; border-top: 1px solid #1a1a1a; }
+    .footer p { font-size: 11px; color: #333; margin: 0; font-family: monospace; letter-spacing: 2px; }
+    .id-code { font-family: monospace; font-size: 10px; color: #222; margin-top: 8px; word-break: break-all; }
   </style>
 </head>
 <body>
   <div class="container">
     <div class="header">
-      <h1>🎪 Kids Kermesse</h1>
+      <div class="header-tag">// Caballeros presenta</div>
+      <h1>ANIVERSARIO</h1>
       <p>Tu acceso está confirmado</p>
     </div>
     <div class="body">
       <p class="greeting">Hola, ${name} 👋</p>
-      <p class="info">
-        Gracias por registrarte. Adjuntamos tu código QR de acceso para el evento.
-        Preséntalo en la entrada el día de la Kermesse.
-      </p>
+      <p class="info">Tu pago fue procesado. Aquí está tu código QR de acceso — preséntalo en la entrada el día del evento.</p>
 
       <div class="detail-box">
-        <p>Registrado por: <strong>${name}</strong></p>
-        <p>Estudiante: <strong>${student_name}</strong></p>
+        <p>Nombre: <strong>${name}</strong></p>
+        <p>Tipo de acceso: <strong>${student_name}</strong></p>
       </div>
 
       <div class="qr-section">
-        <p style="font-weight:700; color:#1a1a2e; font-size:15px; margin-bottom:16px;">Tu código de acceso</p>
-        <img src="cid:qr-code" alt="Código QR" class="qr-img" />
-        <p>Muestra este código en la entrada</p>
+        <div class="qr-label">// Tu código de acceso</div>
+        <img src="${qrDataURL}" alt="Código QR" class="qr-img" />
+        <div class="qr-note">Muestra este código en la entrada</div>
       </div>
     </div>
     <div class="footer">
-      <p>Kids Kermesse · Evento familiar</p>
+      <p>COLECTIVO.LIVE · CABALLEROS</p>
       <p class="id-code">ID: ${registrationId}</p>
     </div>
   </div>
