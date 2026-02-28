@@ -21,19 +21,31 @@ const supabase = createClient(
 const resend = new Resend(process.env.RESEND_API_KEY);
 const stripe = Stripe(process.env.STRIPE_SECRET_KEY);
 
-const BASE_URL = process.env.BASE_URL || 'https://kidskermese-production.up.railway.app';
+const BASE_URL = process.env.BASE_URL || 'https://api.colectivo.live';
+
+// Ticket tiers — source of truth for pricing (never trust client-side amounts)
+const TIERS = {
+  early:   { label: 'Early Bird',  price: 65000  },
+  general: { label: 'General',     price: 95000  },
+  vip:     { label: 'VIP',         price: 180000 }
+};
 
 // POST /create-checkout — creates Stripe checkout session
 app.post('/create-checkout', async (req, res) => {
-  const { name, student_name, email } = req.body;
+  const { name, email, tier } = req.body;
 
-  if (!name || !student_name || !email) {
+  if (!name || !email || !tier) {
     return res.status(400).json({ error: 'Todos los campos son requeridos.' });
+  }
+
+  const tierData = TIERS[tier];
+  if (!tierData) {
+    return res.status(400).json({ error: 'Tipo de acceso no válido.' });
   }
 
   try {
     const registrationId = uuidv4();
-    const ticketPriceCents = parseInt(process.env.TICKET_PRICE_CENTS) || 2000;
+    const tierLabel = `Aniversario Caballeros — ${tierData.label}`;
 
     // Create Stripe Checkout session FIRST — save to DB only after payment confirmed
     const session = await stripe.checkout.sessions.create({
@@ -43,15 +55,15 @@ app.post('/create-checkout', async (req, res) => {
       line_items: [{
         price_data: {
           currency: 'mxn',
-          unit_amount: ticketPriceCents,
+          unit_amount: tierData.price,
           product_data: {
-            name: 'Kids Kermesse — Entrada',
-            description: `Acceso para: ${student_name}`
+            name: `Aniversario Caballeros — ${tierData.label}`,
+            description: `Acceso ${tierData.label} · Colectivo`
           }
         },
         quantity: 1
       }],
-      metadata: { registrationId, name, student_name, email },
+      metadata: { registrationId, name, student_name: tierLabel, email, tier },
       success_url: `${BASE_URL}/success.html?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${BASE_URL}/`
     });
