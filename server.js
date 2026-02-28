@@ -6,6 +6,7 @@ const { Resend } = require('resend');
 const QRCode = require('qrcode');
 const { v4: uuidv4 } = require('uuid');
 const path = require('path');
+const Stripe = require('stripe');
 
 const app = express();
 app.use(cors());
@@ -18,9 +19,12 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_KEY
 );
 const resend = new Resend(process.env.RESEND_API_KEY);
+const stripe = Stripe(process.env.STRIPE_SECRET_KEY);
 
-// POST /register
-app.post('/register', async (req, res) => {
+const BASE_URL = process.env.BASE_URL || 'https://kidskermese-production.up.railway.app';
+
+// POST /create-checkout — creates Stripe checkout session
+app.post('/create-checkout', async (req, res) => {
   const { name, student_name, email } = req.body;
 
   if (!name || !student_name || !email) {
@@ -28,59 +32,101 @@ app.post('/register', async (req, res) => {
   }
 
   try {
-    // 1. Generate unique ID for this registration
     const registrationId = uuidv4();
+    const ticketPriceCents = parseInt(process.env.TICKET_PRICE_CENTS) || 2000;
 
-    // 2. Save to Supabase
-    const { error: dbError } = await supabase
-      .from('registrations')
-      .insert([{ id: registrationId, name, student_name, email }]);
-
-    if (dbError) {
-      console.error('Supabase error:', dbError);
-      return res.status(500).json({ error: 'Error al guardar el registro.' });
-    }
-
-    // 3. Generate QR code as base64 PNG
-    // QR encodes the registration ID — scan at door to verify
-    const qrDataURL = await QRCode.toDataURL(registrationId, {
-      width: 300,
-      margin: 2,
-      color: {
-        dark: '#1a1a2e',
-        light: '#ffffff'
-      }
+    // Create Stripe Checkout session FIRST — save to DB only after payment confirmed
+    const session = await stripe.checkout.sessions.create({
+      payment_method_types: ['card'],
+      mode: 'payment',
+      customer_email: email,
+      line_items: [{
+        price_data: {
+          currency: 'mxn',
+          unit_amount: ticketPriceCents,
+          product_data: {
+            name: 'Kids Kermesse — Entrada',
+            description: `Acceso para: ${student_name}`
+          }
+        },
+        quantity: 1
+      }],
+      metadata: { registrationId, name, student_name, email },
+      success_url: `${BASE_URL}/success.html?session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${BASE_URL}/`
     });
 
-    // Extract base64 part (remove "data:image/png;base64," prefix)
+    return res.status(200).json({ url: session.url });
+
+  } catch (err) {
+    console.error('Stripe error:', err);
+    return res.status(500).json({ error: 'Error al crear el pago.' });
+  }
+});
+
+// POST /confirm-payment — called after Stripe redirect, verifies + sends QR email
+app.post('/confirm-payment', async (req, res) => {
+  const { session_id } = req.body;
+  if (!session_id) return res.status(400).json({ error: 'Session ID requerido.' });
+
+  try {
+    // Verify payment with Stripe
+    const session = await stripe.checkout.sessions.retrieve(session_id);
+    if (session.payment_status !== 'paid') {
+      return res.status(400).json({ error: 'Pago no completado.' });
+    }
+
+    const { registrationId, name, student_name, email } = session.metadata;
+
+    // Check if already confirmed (prevent duplicate emails)
+    const { data: existing } = await supabase
+      .from('registrations')
+      .select('payment_status')
+      .eq('id', registrationId)
+      .single();
+
+    if (existing?.payment_status === 'paid') {
+      return res.status(200).json({ success: true, alreadyConfirmed: true, name, email });
+    }
+
+    if (existing) {
+      // Record exists as pending — update to paid
+      await supabase
+        .from('registrations')
+        .update({ payment_status: 'paid' })
+        .eq('id', registrationId);
+    } else {
+      // First time — insert the record
+      await supabase
+        .from('registrations')
+        .insert([{ id: registrationId, name, student_name, email, payment_status: 'paid' }]);
+    }
+
+    // Generate QR code
+    const qrDataURL = await QRCode.toDataURL(registrationId, {
+      width: 300, margin: 2,
+      color: { dark: '#1a1a2e', light: '#ffffff' }
+    });
     const qrBase64 = qrDataURL.split(',')[1];
 
-    // 4. Send confirmation email via Resend
-    const { error: emailError } = await resend.emails.send({
+    // Send confirmation email
+    await resend.emails.send({
       from: process.env.RESEND_FROM_EMAIL,
       to: email,
       subject: '🎪 Tu acceso a Kids Kermesse',
       html: buildEmailHTML({ name, student_name, registrationId }),
-      attachments: [
-        {
-          filename: 'acceso-kermesse.png',
-          content: qrBase64,
-          content_type: 'image/png'
-        }
-      ]
+      attachments: [{
+        filename: 'acceso-kermesse.png',
+        content: qrBase64,
+        content_type: 'image/png'
+      }]
     });
 
-    if (emailError) {
-      console.error('Resend error:', emailError);
-      // Registration saved, but email failed — don't fail silently
-      return res.status(500).json({ error: 'Registro guardado, pero error al enviar correo.' });
-    }
-
-    return res.status(200).json({ success: true, id: registrationId });
+    return res.status(200).json({ success: true, name, email });
 
   } catch (err) {
-    console.error('Unexpected error:', err);
-    return res.status(500).json({ error: 'Error inesperado. Intenta de nuevo.' });
+    console.error('Confirm error:', err);
+    return res.status(500).json({ error: 'Error al confirmar el pago.' });
   }
 });
 
