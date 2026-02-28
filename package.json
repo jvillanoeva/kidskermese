@@ -14,7 +14,8 @@
     "resend": "^3.2.0",
     "qrcode": "^1.5.3",
     "uuid": "^9.0.0",
-    "dotenv": "^16.4.1"
+    "dotenv": "^16.4.1",
+    "stripe": "^14.21.0"
   },
   "devDependencies": {
     "nodemon": "^3.0.3"
