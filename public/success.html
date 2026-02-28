@@ -3,50 +3,200 @@
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Kids Kermesse — Pago exitoso</title>
+  <title>Acceso confirmado — Colectivo</title>
   <style>
+    @import url('https://fonts.googleapis.com/css2?family=Google+Sans+Flex&family=Space+Mono:wght@400;700&display=swap');
+
     * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --black: #080808;
+      --white: #f5f0e8;
+      --accent: #FF3B1F;
+      --yellow: #F5E642;
+    }
+
     body {
-      font-family: 'Segoe UI', sans-serif;
-      background: #fff8f0; min-height: 100vh;
-      display: flex; align-items: center; justify-content: center; padding: 24px;
+      background: var(--black);
+      color: var(--white);
+      font-family: 'Google Sans Flex', sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
     }
+
+    nav {
+      padding: 20px 40px;
+      display: flex; justify-content: space-between; align-items: center;
+      border-bottom: 1px solid #1a1a1a;
+    }
+    .nav-logo {
+      font-family: 'Space Mono', monospace;
+      font-weight: 700; font-size: 14px; letter-spacing: 4px;
+      color: var(--white); text-decoration: none; opacity: 0.5;
+    }
+    .nav-event {
+      font-family: 'Space Mono', monospace;
+      font-size: 11px; letter-spacing: 3px; color: #444;
+      text-transform: uppercase;
+    }
+
+    .main {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 60px 24px;
+      background-image:
+        repeating-linear-gradient(0deg, transparent, transparent 39px, #111 39px, #111 40px),
+        repeating-linear-gradient(90deg, transparent, transparent 39px, #111 39px, #111 40px);
+    }
+
     .card {
-      background: white; border-radius: 24px; padding: 48px 40px;
-      max-width: 480px; width: 100%;
-      box-shadow: 0 8px 40px rgba(0,0,0,0.08); text-align: center;
+      max-width: 480px;
+      width: 100%;
+      background: #111;
+      border: 1px solid #222;
     }
-    .icon { font-size: 64px; margin-bottom: 16px; }
-    h1 { font-size: 26px; font-weight: 800; color: #1a1a2e; margin-bottom: 8px; }
-    .sub { font-size: 15px; color: #888; line-height: 1.6; margin-bottom: 24px; }
-    .email-box {
-      background: #fff8f0; border-radius: 12px; padding: 16px 20px;
-      font-size: 15px; color: #ff6b35; font-weight: 700; margin-bottom: 24px;
+
+    /* Loading state */
+    .state-loading {
+      padding: 64px 40px;
+      text-align: center;
     }
-    .note { font-size: 13px; color: #aaa; }
     .spinner {
-      display: inline-block; width: 32px; height: 32px;
-      border: 3px solid #f0f0f0; border-top-color: #ff6b35;
+      display: inline-block; width: 28px; height: 28px;
+      border: 2px solid #222; border-top-color: var(--accent);
       border-radius: 50%; animation: spin 0.8s linear infinite;
-      margin-bottom: 16px;
+      margin-bottom: 24px;
     }
     @keyframes spin { to { transform: rotate(360deg); } }
-    .loading h1 { font-size: 18px; color: #888; font-weight: 600; }
-    .error h1 { color: #e74c3c; }
-    .error .sub { color: #e74c3c; }
+    .state-loading p {
+      font-family: 'Space Mono', monospace;
+      font-size: 11px; letter-spacing: 3px; color: #555;
+      text-transform: uppercase;
+    }
+
+    /* Success state */
+    .state-success .card-header {
+      background: #080808;
+      padding: 40px;
+      border-bottom: 1px solid #1a1a1a;
+      text-align: center;
+    }
+    .check-mark {
+      font-family: 'Space Mono', monospace;
+      font-size: 11px; letter-spacing: 4px; color: var(--accent);
+      text-transform: uppercase; margin-bottom: 16px;
+    }
+    .card-header h1 {
+      font-size: 48px; font-weight: 800;
+      letter-spacing: -2px; line-height: 1;
+      color: var(--white);
+    }
+    .card-header h1 span { color: var(--accent); }
+    .card-header .sub {
+      font-size: 13px; color: #555;
+      margin-top: 8px;
+      font-family: 'Space Mono', monospace;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+    }
+
+    .card-body { padding: 36px 40px; }
+
+    .confirm-line {
+      font-size: 15px; color: #888; line-height: 1.7; margin-bottom: 28px;
+    }
+    .confirm-line strong { color: var(--white); }
+
+    .email-row {
+      background: #1a1a1a;
+      border: 1px solid #222;
+      border-left: 3px solid var(--accent);
+      padding: 16px 20px;
+      margin-bottom: 32px;
+    }
+    .email-label {
+      font-family: 'Space Mono', monospace;
+      font-size: 10px; letter-spacing: 3px; color: #555;
+      text-transform: uppercase; margin-bottom: 6px;
+    }
+    .email-value {
+      font-size: 15px; font-weight: 700; color: var(--white);
+    }
+
+    .note {
+      font-size: 12px; color: #444; line-height: 1.7;
+      padding-top: 24px;
+      border-top: 1px solid #1a1a1a;
+    }
+    .note a {
+      color: var(--accent); text-decoration: none;
+    }
+
+    .card-footer {
+      background: #080808;
+      padding: 20px 40px;
+      border-top: 1px solid #1a1a1a;
+      display: flex; align-items: center; gap: 10px;
+    }
+    .card-footer span {
+      font-family: 'Space Mono', monospace;
+      font-size: 10px; letter-spacing: 2px; color: #444;
+      text-transform: uppercase;
+    }
+    .card-footer strong {
+      font-family: 'Space Mono', monospace;
+      font-size: 10px; letter-spacing: 2px; color: var(--accent);
+    }
+
+    /* Error state */
+    .state-error {
+      padding: 64px 40px;
+      text-align: center;
+    }
+    .error-tag {
+      font-family: 'Space Mono', monospace;
+      font-size: 10px; letter-spacing: 3px; color: var(--accent);
+      text-transform: uppercase; margin-bottom: 16px;
+    }
+    .state-error h1 {
+      font-size: 28px; font-weight: 800;
+      color: var(--white); margin-bottom: 12px;
+    }
+    .state-error p {
+      font-size: 14px; color: #555; line-height: 1.7;
+    }
+
+    @media (max-width: 600px) {
+      nav { padding: 16px 20px; }
+      .card-header { padding: 32px 24px; }
+      .card-body { padding: 28px 24px; }
+      .card-footer { padding: 16px 24px; }
+      .state-loading, .state-error { padding: 48px 24px; }
+    }
   </style>
 </head>
 <body>
-  <div class="card" id="card">
-    <!-- Loading state -->
-    <div id="loading">
-      <div class="spinner"></div>
-      <h1>Confirmando tu pago...</h1>
+
+  <nav>
+    <a class="nav-logo" href="https://www.colectivo.live/">COLECTIVO</a>
+    <span class="nav-event">// Aniversario Caballeros</span>
+  </nav>
+
+  <div class="main">
+    <div class="card" id="card">
+      <!-- Loading state (default) -->
+      <div class="state-loading" id="state-loading">
+        <div class="spinner"></div>
+        <p>Confirmando pago...</p>
+      </div>
     </div>
   </div>
 
   <script>
-    const API = 'https://api.colectivo.live';
+    const API = 'https://kidskermese-production.up.railway.app';
 
     async function confirmPayment() {
       const params = new URLSearchParams(window.location.search);
@@ -74,31 +224,52 @@
         showSuccess(data.name, data.email);
 
       } catch (err) {
-        showError('Error de conexión. Tu pago fue procesado pero hubo un error. Contáctanos.');
+        showError('Error de conexión. Tu pago fue procesado — si no recibes el correo en 10 minutos, escríbenos.');
       }
     }
 
     function showSuccess(name, email) {
+      const firstName = name.split(' ')[0];
       document.getElementById('card').innerHTML = `
-        <div class="icon">🎉</div>
-        <h1>¡Listo, ${name.split(' ')[0]}!</h1>
-        <p class="sub">Tu pago fue confirmado. Te enviamos tu código QR de acceso a:</p>
-        <div class="email-box">${email}</div>
-        <p class="note">Preséntalo en la entrada el día del evento. Revisa también tu carpeta de spam.</p>
+        <div class="state-success">
+          <div class="card-header">
+            <div class="check-mark">// Acceso confirmado</div>
+            <h1>LISTO,<br/><span>${firstName.toUpperCase()}</span></h1>
+            <p class="sub">Tu pago fue procesado</p>
+          </div>
+          <div class="card-body">
+            <p class="confirm-line">
+              Tu código QR de acceso fue enviado a:
+            </p>
+            <div class="email-row">
+              <div class="email-label">// Correo de confirmación</div>
+              <div class="email-value">${email}</div>
+            </div>
+            <p class="note">
+              Preséntalo en la entrada el día del evento.<br/>
+              ¿No lo ves? Revisa tu carpeta de spam o escríbenos a <a href="mailto:hola@colectivo.live">hola@colectivo.live</a>
+            </p>
+          </div>
+          <div class="card-footer">
+            <span>Boletos por</span>
+            <strong>COLECTIVO.LIVE</strong>
+          </div>
+        </div>
       `;
     }
 
     function showError(msg) {
       document.getElementById('card').innerHTML = `
-        <div class="error">
-          <div class="icon">⚠️</div>
+        <div class="state-error">
+          <div class="error-tag">// Error</div>
           <h1>Algo salió mal</h1>
-          <p class="sub">${msg}</p>
+          <p>${msg}</p>
         </div>
       `;
     }
 
     confirmPayment();
   </script>
+
 </body>
 </html>
