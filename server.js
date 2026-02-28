@@ -106,15 +106,23 @@ app.post('/confirm-payment', async (req, res) => {
 
     if (existing) {
       // Record exists as pending — update to paid
-      await supabase
+      const { error: updateError } = await supabase
         .from('registrations')
         .update({ payment_status: 'paid' })
         .eq('id', registrationId);
+      if (updateError) {
+        console.error('Supabase update error:', updateError);
+        return res.status(500).json({ error: 'Error al actualizar el registro.' });
+      }
     } else {
       // First time — insert the record
-      await supabase
+      const { error: insertError } = await supabase
         .from('registrations')
         .insert([{ id: registrationId, name, student_name, email, payment_status: 'paid' }]);
+      if (insertError) {
+        console.error('Supabase insert error:', insertError);
+        return res.status(500).json({ error: 'Error al guardar el registro.' });
+      }
     }
 
     // Generate QR code
