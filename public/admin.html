@@ -290,7 +290,7 @@
 
     async function loadData() {
       try {
-        const res = await fetch(`${API}/admin/registrations?password=${encodeURIComponent(savedPassword)}`);
+        const res = await fetch(`${API}/admin/registrations?password=${encodeURIComponent(savedPassword)}&_t=${Date.now()}`);
         if (res.status === 401) {
           document.getElementById('login-error').style.display = 'block';
           return;
