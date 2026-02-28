@@ -47,6 +47,9 @@ app.post('/create-checkout', async (req, res) => {
     const registrationId = uuidv4();
     const tierLabel = `Aniversario Caballeros — ${tierData.label}`;
 
+    // Apply 6% Colectivo service fee on top of base price
+    const chargedAmount = Math.round(tierData.price * 1.06);
+
     // Create Stripe Checkout session FIRST — save to DB only after payment confirmed
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ['card'],
@@ -55,10 +58,10 @@ app.post('/create-checkout', async (req, res) => {
       line_items: [{
         price_data: {
           currency: 'mxn',
-          unit_amount: tierData.price,
+          unit_amount: chargedAmount,
           product_data: {
             name: `Aniversario Caballeros — ${tierData.label}`,
-            description: `Acceso ${tierData.label} · Colectivo`
+            description: `Acceso ${tierData.label} · incluye cargo por servicio Colectivo`
           }
         },
         quantity: 1
