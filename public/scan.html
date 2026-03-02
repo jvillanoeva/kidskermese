@@ -3,113 +3,295 @@
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Kids Kermesse — Puerta</title>
+  <title>Puerta — Colectivo</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html5-qrcode/2.3.8/html5-qrcode.min.js"></script>
   <style>
+    @import url('https://fonts.googleapis.com/css2?family=Google+Sans+Flex&family=Space+Mono:wght@400;700&display=swap');
+
     * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --black: #080808;
+      --white: #f5f0e8;
+      --accent: #FF3B1F;
+      --yellow: #F5E642;
+    }
+
     body {
-      font-family: 'Segoe UI', sans-serif;
-      background: #1a1a2e;
+      font-family: 'Google Sans Flex', sans-serif;
+      background: var(--black);
+      color: var(--white);
       min-height: 100vh;
-      display: flex; flex-direction: column;
-      align-items: center; justify-content: center;
-      padding: 24px; color: white;
+      display: flex;
+      flex-direction: column;
     }
 
-    /* Login */
+    nav {
+      padding: 20px 40px;
+      display: flex; justify-content: space-between; align-items: center;
+      border-bottom: 1px solid #1a1a1a;
+    }
+    .nav-logo {
+      font-family: 'Space Mono', monospace;
+      font-weight: 700; font-size: 14px; letter-spacing: 4px;
+      color: var(--white); text-decoration: none; opacity: 0.5;
+    }
+    .nav-event {
+      font-family: 'Space Mono', monospace;
+      font-size: 11px; letter-spacing: 3px; color: #444;
+      text-transform: uppercase;
+    }
+
+    .main {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 60px 24px;
+      background-image:
+        repeating-linear-gradient(0deg, transparent, transparent 39px, #111 39px, #111 40px),
+        repeating-linear-gradient(90deg, transparent, transparent 39px, #111 39px, #111 40px);
+    }
+
+    /* ── LOGIN ── */
     .login-card {
-      background: #ffffff10; border-radius: 20px; padding: 36px;
-      max-width: 360px; width: 100%; text-align: center;
+      background: #111;
+      border: 1px solid #222;
+      padding: 48px 40px;
+      max-width: 380px;
+      width: 100%;
+      text-align: center;
     }
-    .login-card h1 { font-size: 20px; font-weight: 800; margin-bottom: 6px; }
-    .login-card p { color: #aaa; font-size: 14px; margin-bottom: 24px; }
+    .login-tag {
+      font-family: 'Space Mono', monospace;
+      font-size: 10px; letter-spacing: 4px; color: var(--accent);
+      text-transform: uppercase; margin-bottom: 16px;
+    }
+    .login-card h1 {
+      font-size: 40px; font-weight: 800;
+      letter-spacing: -2px; color: var(--white);
+      margin-bottom: 4px;
+    }
+    .login-card h1 span { color: var(--accent); }
+    .login-card .sub {
+      font-family: 'Space Mono', monospace;
+      font-size: 11px; letter-spacing: 2px; color: #444;
+      text-transform: uppercase; margin-bottom: 36px;
+    }
     .login-card input {
-      width: 100%; padding: 14px 16px; border: 2px solid #ffffff20;
-      border-radius: 12px; font-size: 15px; background: #ffffff10;
-      color: white; outline: none; margin-bottom: 12px;
+      width: 100%; padding: 14px 16px;
+      background: #1a1a1a; border: 1px solid #222;
+      font-size: 14px; color: var(--white); outline: none;
+      font-family: 'Google Sans Flex', sans-serif;
+      margin-bottom: 12px;
+      transition: border-color 0.15s;
     }
-    .login-card input::placeholder { color: #aaa; }
-    .login-card input:focus { border-color: #ff6b35; }
+    .login-card input:focus { border-color: var(--accent); }
+    .login-card input::placeholder { color: #444; }
     .login-card button {
-      width: 100%; padding: 14px; background: #ff6b35; color: white;
-      border: none; border-radius: 12px; font-size: 15px; font-weight: 700; cursor: pointer;
+      width: 100%; padding: 14px;
+      background: var(--accent); color: white; border: none;
+      font-size: 13px; font-weight: 700; letter-spacing: 2px;
+      text-transform: uppercase; cursor: pointer;
+      font-family: 'Google Sans Flex', sans-serif;
+      transition: opacity 0.2s;
     }
-    .login-error { color: #e74c3c; font-size: 13px; margin-top: 10px; display: none; }
+    .login-card button:hover { opacity: 0.85; }
+    .login-error {
+      font-family: 'Space Mono', monospace;
+      font-size: 11px; color: var(--accent);
+      letter-spacing: 2px; margin-top: 12px; display: none;
+    }
 
-    /* Scanner */
-    .scanner-view { display: none; width: 100%; max-width: 420px; text-align: center; }
-    .scanner-header { margin-bottom: 20px; }
-    .scanner-header h1 { font-size: 20px; font-weight: 800; }
-    .scanner-header p { color: #aaa; font-size: 13px; margin-top: 4px; }
+    /* ── SCANNER VIEW ── */
+    .scanner-view { display: none; width: 100%; max-width: 440px; }
+
+    .scanner-header { text-align: center; margin-bottom: 24px; }
+    .scanner-tag {
+      font-family: 'Space Mono', monospace;
+      font-size: 10px; letter-spacing: 4px; color: var(--accent);
+      text-transform: uppercase; margin-bottom: 12px;
+    }
+    .scanner-header h1 {
+      font-size: 32px; font-weight: 800;
+      letter-spacing: -1.5px; color: var(--white);
+    }
+    .scanner-header p {
+      font-family: 'Space Mono', monospace;
+      font-size: 11px; letter-spacing: 2px; color: #555;
+      text-transform: uppercase; margin-top: 6px;
+    }
 
     #reader {
-      border-radius: 16px; overflow: hidden;
-      border: 3px solid #ff6b35;
+      border: 2px solid var(--accent) !important;
+      overflow: hidden;
       width: 100% !important;
     }
 
-    /* Result overlay */
-    .result {
-      display: none; position: fixed; inset: 0;
-      align-items: center; justify-content: center;
-      padding: 24px; z-index: 100;
+    /* Force html5-qrcode internal elements to look clean */
+    #reader video { display: block; }
+    #reader img { display: none !important; }
+    #reader__scan_region { background: transparent !important; }
+    #reader__dashboard { background: var(--black) !important; border-top: 1px solid #1a1a1a !important; }
+    #reader__dashboard_section_swaplink,
+    #reader__dashboard_section_csr span,
+    #reader__status_span {
+      font-family: 'Space Mono', monospace !important;
+      font-size: 10px !important; letter-spacing: 2px !important;
+      color: #555 !important; text-transform: uppercase !important;
     }
-    .result.success { background: rgba(39, 174, 96, 0.95); }
-    .result.already { background: rgba(243, 156, 18, 0.95); }
-    .result.error { background: rgba(231, 76, 60, 0.95); }
-
-    .result-card { text-align: center; max-width: 320px; width: 100%; }
-    .result-icon { font-size: 72px; margin-bottom: 16px; }
-    .result-title { font-size: 28px; font-weight: 800; margin-bottom: 8px; }
-    .result-name { font-size: 20px; font-weight: 700; margin-bottom: 4px; }
-    .result-sub { font-size: 15px; opacity: 0.85; margin-bottom: 32px; }
-    .result-btn {
-      background: white; color: #1a1a2e; border: none;
-      padding: 16px 32px; border-radius: 12px;
-      font-size: 16px; font-weight: 700; cursor: pointer; width: 100%;
+    #reader__camera_selection {
+      background: #1a1a1a !important;
+      border: 1px solid #222 !important;
+      color: var(--white) !important;
+      font-family: 'Google Sans Flex', sans-serif !important;
+      font-size: 13px !important;
+      padding: 8px 12px !important;
+      outline: none !important;
+      width: 100% !important;
+    }
+    button#reader__camera_permission_button,
+    button#html5-qrcode-button-camera-stop,
+    button#html5-qrcode-button-camera-start {
+      background: var(--accent) !important;
+      color: white !important;
+      border: none !important;
+      font-family: 'Space Mono', monospace !important;
+      font-size: 10px !important; letter-spacing: 2px !important;
+      text-transform: uppercase !important;
+      padding: 10px 20px !important;
+      cursor: pointer !important;
     }
 
     .admin-link {
-      margin-top: 24px; color: #aaa; font-size: 13px; text-decoration: none;
+      display: block;
+      margin-top: 20px;
+      font-family: 'Space Mono', monospace;
+      font-size: 10px; letter-spacing: 3px; color: #333;
+      text-transform: uppercase; text-decoration: none;
+      text-align: center;
+      transition: color 0.15s;
     }
-    .admin-link:hover { color: white; }
+    .admin-link:hover { color: #666; }
+
+    /* ── RESULT OVERLAY ── */
+    .result {
+      display: none;
+      position: fixed; inset: 0;
+      align-items: center; justify-content: center;
+      padding: 24px; z-index: 100;
+    }
+
+    .result.success { background: rgba(8, 8, 8, 0.97); border-top: 4px solid #27ae60; }
+    .result.already  { background: rgba(8, 8, 8, 0.97); border-top: 4px solid var(--yellow); }
+    .result.error    { background: rgba(8, 8, 8, 0.97); border-top: 4px solid var(--accent); }
+
+    .result-card {
+      text-align: center;
+      max-width: 360px; width: 100%;
+      background: #111; border: 1px solid #222;
+      padding: 48px 40px;
+    }
+
+    .result-status-tag {
+      font-family: 'Space Mono', monospace;
+      font-size: 10px; letter-spacing: 4px;
+      text-transform: uppercase; margin-bottom: 20px;
+    }
+    .result.success .result-status-tag { color: #27ae60; }
+    .result.already  .result-status-tag { color: var(--yellow); }
+    .result.error    .result-status-tag { color: var(--accent); }
+
+    .result-title {
+      font-size: 40px; font-weight: 800;
+      letter-spacing: -2px; color: var(--white);
+      line-height: 1; margin-bottom: 20px;
+    }
+
+    .result-name-box {
+      background: #1a1a1a; border: 1px solid #222;
+      border-left: 3px solid currentColor;
+      padding: 14px 20px; margin-bottom: 32px;
+    }
+    .result.success .result-name-box { border-left-color: #27ae60; }
+    .result.already  .result-name-box { border-left-color: var(--yellow); }
+    .result.error    .result-name-box { border-left-color: var(--accent); }
+
+    .result-name {
+      font-size: 18px; font-weight: 700; color: var(--white);
+      margin-bottom: 4px;
+    }
+    .result-sub {
+      font-family: 'Space Mono', monospace;
+      font-size: 11px; letter-spacing: 2px; color: #555;
+      text-transform: uppercase;
+    }
+
+    .result-btn {
+      width: 100%; padding: 14px;
+      background: var(--white); color: var(--black);
+      border: none; font-size: 13px; font-weight: 700;
+      letter-spacing: 2px; text-transform: uppercase;
+      cursor: pointer; font-family: 'Google Sans Flex', sans-serif;
+      transition: opacity 0.2s;
+    }
+    .result-btn:hover { opacity: 0.85; }
+
+    @media (max-width: 600px) {
+      nav { padding: 16px 20px; }
+      .main { padding: 40px 20px; }
+      .login-card { padding: 36px 24px; }
+      .result-card { padding: 36px 24px; }
+    }
   </style>
 </head>
 <body>
 
-  <!-- Login -->
-  <div class="login-card" id="login-card">
-    <div style="font-size:40px; margin-bottom:12px;">📷</div>
-    <h1>Escaneo en Puerta</h1>
-    <p>Kids Kermesse — Acceso personal autorizado</p>
-    <input type="password" id="pw" placeholder="Contraseña" />
-    <button onclick="startScanner()">Abrir cámara</button>
-    <p class="login-error" id="login-error">Contraseña incorrecta</p>
-  </div>
+  <nav>
+    <a class="nav-logo" href="/">COLECTIVO</a>
+    <span class="nav-event">// Aniversario Caballeros</span>
+  </nav>
 
-  <!-- Scanner -->
-  <div class="scanner-view" id="scanner-view">
-    <div class="scanner-header">
-      <h1>📷 Escanear QR</h1>
-      <p>Apunta la cámara al código del asistente</p>
+  <div class="main">
+
+    <!-- Login -->
+    <div class="login-card" id="login-card">
+      <div class="login-tag">// Acceso restringido</div>
+      <h1>PUERTA<br/><span>SCAN</span></h1>
+      <p class="sub">Personal autorizado</p>
+      <input type="password" id="pw" placeholder="Contraseña" />
+      <button onclick="startScanner()">Abrir cámara →</button>
+      <p class="login-error" id="login-error">Contraseña incorrecta</p>
     </div>
-    <div id="reader"></div>
-    <a class="admin-link" href="/admin.html">← Ver todos los registros</a>
+
+    <!-- Scanner -->
+    <div class="scanner-view" id="scanner-view">
+      <div class="scanner-header">
+        <div class="scanner-tag">// Escáner activo</div>
+        <h1>ESCANEAR QR</h1>
+        <p>Apunta al código del asistente</p>
+      </div>
+      <div id="reader"></div>
+      <a class="admin-link" href="/admin.html">← Ver todos los registros</a>
+    </div>
+
   </div>
 
   <!-- Result overlay -->
   <div class="result" id="result-overlay">
     <div class="result-card">
-      <div class="result-icon" id="result-icon"></div>
+      <div class="result-status-tag" id="result-tag"></div>
       <div class="result-title" id="result-title"></div>
-      <div class="result-name" id="result-name"></div>
-      <div class="result-sub" id="result-sub"></div>
+      <div class="result-name-box">
+        <div class="result-name" id="result-name"></div>
+        <div class="result-sub" id="result-sub"></div>
+      </div>
       <button class="result-btn" onclick="dismissResult()">Escanear siguiente →</button>
     </div>
   </div>
 
   <script>
-    const API = 'https://kidskermese-production.up.railway.app';
+    const API = 'https://api.colectivo.live';
     let savedPassword = '';
     let scanner = null;
     let scanning = true;
@@ -126,16 +308,16 @@
 
       scanner = new Html5Qrcode("reader");
       scanner.start(
-        { facingMode: "environment" }, // use back camera on mobile
+        { facingMode: "environment" },
         { fps: 10, qrbox: { width: 250, height: 250 } },
         onScanSuccess,
-        () => {} // ignore scan errors silently
+        () => {}
       );
     }
 
     async function onScanSuccess(qrId) {
       if (!scanning) return;
-      scanning = false; // prevent double scans
+      scanning = false;
 
       try {
         const res = await fetch(`${API}/verify`, {
@@ -147,33 +329,33 @@
         const data = await res.json();
 
         if (res.status === 401) {
-          showResult('error', '🚫', 'No autorizado', '', 'Contraseña incorrecta');
+          showResult('error', '// No autorizado', 'BLOQUEADO', '', 'Contraseña incorrecta');
           return;
         }
 
         if (data.status === 'success') {
-          showResult('success', '✅', '¡Acceso válido!',
+          showResult('success', '// Acceso válido', '¡ADELANTE!',
             data.registration.name,
-            `Estudiante: ${data.registration.student_name}`
+            data.registration.student_name || 'Boleto válido'
           );
         } else if (data.status === 'already_checked_in') {
-          showResult('already', '⚠️', 'Ya ingresó',
+          showResult('already', '// Ya registrado', 'DUPLICADO',
             data.registration.name,
-            `Este acceso ya fue utilizado`
+            'Este acceso ya fue utilizado'
           );
         } else {
-          showResult('error', '❌', 'No encontrado', '', 'QR no válido o no registrado');
+          showResult('error', '// No encontrado', 'INVÁLIDO', '', 'QR no reconocido');
         }
 
       } catch (err) {
-        showResult('error', '❌', 'Error de conexión', '', 'Intenta de nuevo');
+        showResult('error', '// Error de red', 'CONEXIÓN', '', 'Intenta de nuevo');
       }
     }
 
-    function showResult(type, icon, title, name, sub) {
+    function showResult(type, tag, title, name, sub) {
       const overlay = document.getElementById('result-overlay');
       overlay.className = `result ${type}`;
-      document.getElementById('result-icon').textContent = icon;
+      document.getElementById('result-tag').textContent = tag;
       document.getElementById('result-title').textContent = title;
       document.getElementById('result-name').textContent = name;
       document.getElementById('result-sub').textContent = sub;
@@ -182,7 +364,7 @@
 
     function dismissResult() {
       document.getElementById('result-overlay').style.display = 'none';
-      scanning = true; // ready for next scan
+      scanning = true;
     }
   </script>
 
