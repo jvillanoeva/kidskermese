@@ -167,8 +167,11 @@
       font-size: 10px; letter-spacing: 3px; color: #444;
       text-transform: uppercase; font-weight: 400;
     }
-    tbody tr { border-bottom: 1px solid #111; }
-    tbody tr:hover { background: #0e0e0e; }
+    tbody tr {
+      border-bottom: 1px solid #111;
+      cursor: pointer; transition: background 0.1s;
+    }
+    tbody tr:hover { background: #111; }
     tbody td { padding: 14px 16px; font-size: 14px; color: #888; }
     tbody td strong { color: var(--white); }
     tbody td .tier-tag {
@@ -193,6 +196,107 @@
       font-family: 'Space Mono', monospace;
       font-size: 11px; letter-spacing: 2px; color: #333;
     }
+    .row-hint {
+      font-family: 'Space Mono', monospace;
+      font-size: 10px; color: #1f1f1f; letter-spacing: 2px;
+      margin-top: 10px; text-align: right;
+    }
+
+    /* ── DETAIL MODAL ── */
+    .modal-overlay {
+      display: none; position: fixed; inset: 0; z-index: 100;
+      background: rgba(8, 8, 8, 0.92);
+      align-items: center; justify-content: center;
+      padding: 24px;
+    }
+    .modal-overlay.open { display: flex; }
+
+    .modal {
+      background: #111; border: 1px solid #222;
+      max-width: 480px; width: 100%;
+      max-height: 90vh; overflow-y: auto;
+    }
+
+    .modal-header {
+      padding: 24px 28px;
+      border-bottom: 1px solid #1a1a1a;
+      display: flex; justify-content: space-between; align-items: flex-start;
+    }
+    .modal-tag {
+      font-family: 'Space Mono', monospace;
+      font-size: 10px; letter-spacing: 4px; color: var(--accent);
+      text-transform: uppercase; margin-bottom: 8px;
+    }
+    .modal-name {
+      font-size: 22px; font-weight: 800;
+      letter-spacing: -0.5px; color: var(--white);
+    }
+    .modal-close {
+      background: none; border: none; color: #444;
+      font-size: 22px; cursor: pointer; padding: 0 4px;
+      line-height: 1; transition: color 0.15s;
+    }
+    .modal-close:hover { color: var(--white); }
+
+    .modal-body { padding: 24px 28px; }
+
+    .detail-row {
+      display: flex; gap: 12px;
+      padding: 12px 0; border-bottom: 1px solid #1a1a1a;
+      align-items: baseline;
+    }
+    .detail-row:last-child { border-bottom: none; }
+    .detail-label {
+      font-family: 'Space Mono', monospace;
+      font-size: 10px; letter-spacing: 2px; color: #444;
+      text-transform: uppercase; min-width: 90px; flex-shrink: 0;
+    }
+    .detail-value { font-size: 14px; color: var(--white); word-break: break-all; }
+    .detail-value.muted { color: #555; }
+    .detail-value .green { color: #27ae60; }
+    .detail-value .red { color: var(--accent); }
+
+    .ticket-id-box {
+      background: #0f0f0f; border: 1px solid #1a1a1a;
+      padding: 10px 14px; margin-top: 4px;
+      font-family: 'Space Mono', monospace;
+      font-size: 11px; color: #555;
+      word-break: break-all;
+    }
+
+    .modal-actions {
+      padding: 20px 28px;
+      border-top: 1px solid #1a1a1a;
+      display: flex; gap: 10px;
+    }
+    .btn-resend {
+      flex: 1; padding: 13px;
+      background: var(--accent); color: white; border: none;
+      font-size: 12px; font-weight: 700; letter-spacing: 2px;
+      text-transform: uppercase; cursor: pointer;
+      font-family: 'Google Sans Flex', sans-serif;
+      transition: opacity 0.2s;
+    }
+    .btn-resend:hover { opacity: 0.85; }
+    .btn-resend:disabled { opacity: 0.4; cursor: not-allowed; }
+    .btn-cancel {
+      padding: 13px 20px;
+      background: transparent; color: #555; border: 1px solid #222;
+      font-size: 12px; font-weight: 700; letter-spacing: 2px;
+      text-transform: uppercase; cursor: pointer;
+      font-family: 'Google Sans Flex', sans-serif;
+      transition: color 0.2s, border-color 0.2s;
+    }
+    .btn-cancel:hover { color: var(--white); border-color: #444; }
+
+    .resend-feedback {
+      font-family: 'Space Mono', monospace;
+      font-size: 11px; letter-spacing: 2px;
+      text-align: center; padding: 10px 28px;
+      display: none;
+    }
+    .resend-feedback.ok { color: #27ae60; }
+    .resend-feedback.err { color: var(--accent); }
 
     @media (max-width: 768px) {
       .stats { grid-template-columns: repeat(2, 1fr); }
@@ -248,7 +352,7 @@
 
       <div class="controls">
         <div class="search-wrap">
-          <input type="text" id="search" placeholder="Buscar por nombre, tier o correo..." oninput="filterTable()" />
+          <input type="text" id="search" placeholder="Buscar por nombre, tier, teléfono o correo..." oninput="filterTable()" />
         </div>
         <button class="refresh-btn" onclick="loadData()">↻ Actualizar</button>
       </div>
@@ -269,13 +373,42 @@
           </tbody>
         </table>
       </div>
+      <p class="row-hint">// Toca un registro para ver detalles</p>
+    </div>
+  </div>
+
+  <!-- Detail Modal -->
+  <div class="modal-overlay" id="modal-overlay" onclick="closeModalOnBg(event)">
+    <div class="modal" id="modal">
+      <div class="modal-header">
+        <div>
+          <div class="modal-tag" id="modal-tag">// Boleto</div>
+          <div class="modal-name" id="modal-name">—</div>
+        </div>
+        <button class="modal-close" onclick="closeModal()">✕</button>
+      </div>
+
+      <div class="modal-body" id="modal-body">
+        <!-- filled by JS -->
+      </div>
+
+      <div class="resend-feedback" id="resend-feedback"></div>
+
+      <div class="modal-actions">
+        <button class="btn-resend" id="btn-resend" onclick="resendQR()">
+          Reenviar QR por email →
+        </button>
+        <button class="btn-cancel" onclick="closeModal()">Cerrar</button>
+      </div>
     </div>
   </div>
 
   <script>
     const API = 'https://api.colectivo.live';
     let allData = [];
+    let renderedData = [];
     let savedPassword = '';
+    let activeEmail = '';
 
     function login() {
       const pw = document.getElementById('password-input').value;
@@ -317,13 +450,14 @@
     }
 
     function renderTable(data) {
+      renderedData = data;
       const tbody = document.getElementById('table-body');
       if (!data.length) {
         tbody.innerHTML = '<tr><td colspan="5" class="empty">SIN REGISTROS AÚN</td></tr>';
         return;
       }
-      tbody.innerHTML = data.map(r => `
-        <tr>
+      tbody.innerHTML = data.map((r, i) => `
+        <tr onclick="showDetail(${i})">
           <td><strong>${r.name}</strong></td>
           <td><span class="tier-tag">${r.student_name || '—'}</span></td>
           <td>${r.email}</td>
@@ -341,10 +475,120 @@
       const filtered = allData.filter(r =>
         r.name.toLowerCase().includes(q) ||
         (r.student_name || '').toLowerCase().includes(q) ||
-        r.email.toLowerCase().includes(q)
+        r.email.toLowerCase().includes(q) ||
+        (r.phone || '').toLowerCase().includes(q)
       );
       renderTable(filtered);
       renderStats(filtered);
+    }
+
+    // ── DETAIL MODAL ──
+
+    function showDetail(index) {
+      const r = renderedData[index];
+      if (!r) return;
+
+      activeEmail = r.email;
+
+      // Count how many tickets this email has in total
+      const sameEmail = allData.filter(x => x.email === r.email);
+      const totalTickets = sameEmail.length;
+      const checkedCount = sameEmail.filter(x => x.checked_in).length;
+
+      document.getElementById('modal-tag').textContent =
+        totalTickets > 1 ? `// ${totalTickets} boletos · ${checkedCount} ingresaron` : '// 1 boleto';
+      document.getElementById('modal-name').textContent = r.name;
+
+      const checkinTime = r.checked_in_at
+        ? new Date(r.checked_in_at).toLocaleString('es-MX', { day:'numeric', month:'short', hour:'2-digit', minute:'2-digit' })
+        : null;
+
+      document.getElementById('modal-body').innerHTML = `
+        <div class="detail-row">
+          <span class="detail-label">Email</span>
+          <span class="detail-value">${r.email}</span>
+        </div>
+        <div class="detail-row">
+          <span class="detail-label">WhatsApp</span>
+          <span class="detail-value ${r.phone ? '' : 'muted'}">${r.phone || 'No capturado'}</span>
+        </div>
+        <div class="detail-row">
+          <span class="detail-label">Tier</span>
+          <span class="detail-value">${r.student_name || '—'}</span>
+        </div>
+        <div class="detail-row">
+          <span class="detail-label">Compra</span>
+          <span class="detail-value">${new Date(r.created_at).toLocaleString('es-MX', { day:'numeric', month:'long', hour:'2-digit', minute:'2-digit' })}</span>
+        </div>
+        <div class="detail-row">
+          <span class="detail-label">Estado</span>
+          <span class="detail-value">${r.checked_in
+            ? `<span class="green">✓ Ingresó${checkinTime ? ` · ${checkinTime}` : ''}</span>`
+            : '<span class="red">Pendiente</span>'
+          }</span>
+        </div>
+        ${totalTickets > 1 ? `
+        <div class="detail-row">
+          <span class="detail-label">Orden</span>
+          <span class="detail-value">${checkedCount} / ${totalTickets} boletos escaneados</span>
+        </div>
+        ` : ''}
+        <div class="detail-row" style="flex-direction:column;gap:8px">
+          <span class="detail-label">ID Boleto</span>
+          <div class="ticket-id-box">${r.id}</div>
+          ${totalTickets > 1 ? `<span style="font-family:'Space Mono',monospace;font-size:10px;color:#333;letter-spacing:2px">+ ${totalTickets - 1} ID(s) adicionales en la misma orden</span>` : ''}
+        </div>
+      `;
+
+      // Reset resend button
+      const btn = document.getElementById('btn-resend');
+      btn.disabled = false;
+      btn.textContent = totalTickets > 1
+        ? `Reenviar ${totalTickets} QRs por email →`
+        : 'Reenviar QR por email →';
+      document.getElementById('resend-feedback').style.display = 'none';
+
+      document.getElementById('modal-overlay').classList.add('open');
+    }
+
+    function closeModal() {
+      document.getElementById('modal-overlay').classList.remove('open');
+    }
+
+    function closeModalOnBg(e) {
+      if (e.target === document.getElementById('modal-overlay')) closeModal();
+    }
+
+    async function resendQR() {
+      const btn = document.getElementById('btn-resend');
+      const feedback = document.getElementById('resend-feedback');
+      btn.disabled = true;
+      btn.textContent = 'Enviando...';
+      feedback.style.display = 'none';
+
+      try {
+        const res = await fetch(`${API}/admin/resend-email`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email: activeEmail, password: savedPassword })
+        });
+        const data = await res.json();
+
+        if (res.ok) {
+          feedback.textContent = `✓ Email reenviado a ${activeEmail}`;
+          feedback.className = 'resend-feedback ok';
+          feedback.style.display = 'block';
+          btn.textContent = 'Enviado ✓';
+        } else {
+          throw new Error(data.error || 'Error desconocido');
+        }
+      } catch (err) {
+        feedback.textContent = `✗ ${err.message}`;
+        feedback.className = 'resend-feedback err';
+        feedback.style.display = 'block';
+        btn.disabled = false;
+        btn.textContent = 'Reintentar →';
+      }
     }
 
     // Auto-refresh every 30 seconds
