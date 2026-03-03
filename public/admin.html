@@ -40,41 +40,42 @@
     nav { padding: 16px 32px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); position: sticky; top: 0; background: var(--black); z-index: 10; }
     .nav-left { display: flex; align-items: center; gap: 20px; }
     .nav-logo { font-family: 'Space Mono', monospace; font-weight: 700; font-size: 13px; letter-spacing: 4px; color: var(--white); opacity: 0.4; text-decoration: none; }
-    .nav-event { font-family: 'Space Mono', monospace; font-size: 11px; letter-spacing: 2px; color: #333; text-transform: uppercase; }
+    .nav-event { font-family: 'Space Mono', monospace; font-size: 11px; letter-spacing: 2px; color: #666; text-transform: uppercase; }
     .nav-right { display: flex; align-items: center; gap: 12px; }
     .scan-btn { font-family: 'Space Mono', monospace; font-size: 11px; letter-spacing: 2px; color: var(--black); background: var(--white); padding: 8px 16px; text-decoration: none; font-weight: 700; text-transform: uppercase; transition: opacity 0.2s; }
     .scan-btn:hover { opacity: 0.8; }
-    .last-update { font-family: 'Space Mono', monospace; font-size: 10px; letter-spacing: 1px; color: #333; }
+    .last-update { font-family: 'Space Mono', monospace; font-size: 10px; letter-spacing: 1px; color: #666; }
 
     .main { padding: 28px 32px; display: flex; flex-direction: column; gap: 24px; }
 
     /* ── SECTION HEADER ── */
-    .section-label { font-family: 'Space Mono', monospace; font-size: 10px; letter-spacing: 4px; color: #333; text-transform: uppercase; margin-bottom: 12px; }
+    .section-label { font-family: 'Space Mono', monospace; font-size: 10px; letter-spacing: 4px; color: #666; text-transform: uppercase; margin-bottom: 12px; }
 
     /* ── STAT CARDS ROW (attendance) ── */
     .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 2px; }
     .stat-card { background: #111; border: 1px solid var(--border); padding: 20px 24px; }
-    .stat-label { font-family: 'Space Mono', monospace; font-size: 10px; letter-spacing: 3px; color: #444; text-transform: uppercase; margin-bottom: 8px; }
+    .stat-label { font-family: 'Space Mono', monospace; font-size: 10px; letter-spacing: 3px; color: #777; text-transform: uppercase; margin-bottom: 8px; }
     .stat-value { font-size: 44px; font-weight: 800; letter-spacing: -2px; color: var(--white); line-height: 1; }
     .stat-card.c-accent .stat-value { color: var(--accent); }
     .stat-card.c-yellow .stat-value { color: var(--yellow); }
     .stat-card.c-green .stat-value { color: var(--green); }
-    .stat-sub { font-family: 'Space Mono', monospace; font-size: 10px; letter-spacing: 1px; color: #333; margin-top: 6px; }
+    .stat-sub { font-family: 'Space Mono', monospace; font-size: 10px; letter-spacing: 1px; color: #666; margin-top: 6px; }
 
     /* ── REVENUE ROW ── */
-    .revenue-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 2px; }
+    .revenue-grid { display: grid; grid-template-columns: 1fr 1fr 1.6fr; gap: 2px; }
     .rev-card { background: #0f0f0f; border: 1px solid var(--border); padding: 20px 24px; position: relative; overflow: hidden; }
     .rev-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px; }
     .rev-card.c-white::before { background: #333; }
     .rev-card.c-yellow::before { background: var(--yellow); }
-    .rev-card.c-red::before { background: var(--accent); }
-    .rev-card.c-green::before { background: var(--green); }
-    .rev-label { font-family: 'Space Mono', monospace; font-size: 10px; letter-spacing: 3px; color: #444; text-transform: uppercase; margin-bottom: 10px; }
+    .rev-label { font-family: 'Space Mono', monospace; font-size: 10px; letter-spacing: 3px; color: #777; text-transform: uppercase; margin-bottom: 10px; }
     .rev-value { font-size: 28px; font-weight: 800; letter-spacing: -1px; color: var(--white); }
     .rev-card.c-yellow .rev-value { color: var(--yellow); }
-    .rev-card.c-red .rev-value { color: var(--accent); }
-    .rev-card.c-green .rev-value { color: var(--green); }
-    .rev-sub { font-family: 'Space Mono', monospace; font-size: 10px; letter-spacing: 1px; color: #333; margin-top: 6px; }
+    /* Hero card — promoter net income */
+    .rev-card.hero { background: #111; border: 1px solid #2a2a2a; padding: 24px 28px; }
+    .rev-card.hero::before { background: var(--yellow); height: 3px; }
+    .rev-card.hero .rev-label { color: #888; font-size: 11px; }
+    .rev-card.hero .rev-value { font-size: 44px; letter-spacing: -2px; color: var(--yellow); }
+    .rev-sub { font-family: 'Space Mono', monospace; font-size: 10px; letter-spacing: 1px; color: #666; margin-top: 6px; }
 
     /* ── TIER BREAKDOWN ── */
     .tiers-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 2px; }
@@ -85,13 +86,13 @@
     .tier-card.t-early .tier-card-name { color: var(--yellow); }
     .tier-card.t-early .tier-card-badge { color: var(--black); background: var(--yellow); }
     .tier-card.t-general .tier-card-name { color: var(--white); }
-    .tier-card.t-general .tier-card-badge { color: #444; border: 1px solid #333; }
+    .tier-card.t-general .tier-card-badge { color: #888; border: 1px solid #444; }
     .tier-card.t-vip .tier-card-name { color: var(--accent); }
     .tier-card.t-vip .tier-card-badge { color: white; background: var(--accent); }
 
     .tier-sold-row { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 8px; }
     .tier-sold-num { font-size: 36px; font-weight: 800; letter-spacing: -2px; }
-    .tier-capacity { font-family: 'Space Mono', monospace; font-size: 12px; color: #555; }
+    .tier-capacity { font-family: 'Space Mono', monospace; font-size: 12px; color: #888; }
     .tier-card.t-early .tier-sold-num { color: var(--yellow); }
     .tier-card.t-general .tier-sold-num { color: var(--white); }
     .tier-card.t-vip .tier-sold-num { color: var(--accent); }
@@ -104,8 +105,8 @@
 
     .tier-meta { display: flex; flex-direction: column; gap: 6px; }
     .tier-meta-row { display: flex; justify-content: space-between; align-items: center; }
-    .tier-meta-label { font-family: 'Space Mono', monospace; font-size: 10px; letter-spacing: 2px; color: #444; text-transform: uppercase; }
-    .tier-meta-value { font-family: 'Space Mono', monospace; font-size: 12px; color: #888; }
+    .tier-meta-label { font-family: 'Space Mono', monospace; font-size: 10px; letter-spacing: 2px; color: #777; text-transform: uppercase; }
+    .tier-meta-value { font-family: 'Space Mono', monospace; font-size: 12px; color: #aaa; }
     .tier-meta-value.highlight { color: var(--white); font-weight: 700; }
 
     /* ── CONTROLS + TABLE ── */
@@ -120,11 +121,11 @@
     .table-wrap { border: 1px solid var(--border); overflow-x: auto; }
     table { width: 100%; border-collapse: collapse; }
     thead { background: #0f0f0f; border-bottom: 1px solid var(--border); }
-    thead th { padding: 12px 16px; text-align: left; font-family: 'Space Mono', monospace; font-size: 10px; letter-spacing: 3px; color: #333; text-transform: uppercase; font-weight: 400; }
-    tbody tr { border-bottom: 1px solid #0e0e0e; cursor: pointer; transition: background 0.1s; }
-    tbody tr:hover { background: #0e0e0e; }
-    tbody td { padding: 12px 16px; font-size: 13px; color: #666; }
-    tbody td strong { color: #aaa; }
+    thead th { padding: 12px 16px; text-align: left; font-family: 'Space Mono', monospace; font-size: 10px; letter-spacing: 3px; color: #666; text-transform: uppercase; font-weight: 400; }
+    tbody tr { border-bottom: 1px solid #111; cursor: pointer; transition: background 0.1s; }
+    tbody tr:hover { background: #111; }
+    tbody td { padding: 12px 16px; font-size: 13px; color: #999; }
+    tbody td strong { color: var(--white); }
     .tier-pill { font-family: 'Space Mono', monospace; font-size: 9px; letter-spacing: 2px; padding: 3px 8px; text-transform: uppercase; font-weight: 700; display: inline-block; }
     .tier-pill.t-early { color: var(--black); background: var(--yellow); }
     .tier-pill.t-general { color: #555; border: 1px solid #333; }
@@ -228,27 +229,22 @@
 
       <!-- ── INGRESOS ── -->
       <div>
-        <div class="section-label">// Ingresos · estimado</div>
+        <div class="section-label">// Ingresos</div>
         <div class="revenue-grid">
           <div class="rev-card c-white">
             <div class="rev-label">Total recaudado</div>
             <div class="rev-value" id="rev-gross">—</div>
-            <div class="rev-sub">Cobrado a clientes</div>
+            <div class="rev-sub">Cobrado a clientes (base + 6%)</div>
           </div>
           <div class="rev-card c-yellow">
             <div class="rev-label">Comisión Colectivo</div>
             <div class="rev-value" id="rev-commission">—</div>
             <div class="rev-sub">6% sobre precio base</div>
           </div>
-          <div class="rev-card c-red">
-            <div class="rev-label">Cargos Stripe</div>
-            <div class="rev-value" id="rev-stripe">—</div>
-            <div class="rev-sub">3.6% + $3.50 / boleto est.</div>
-          </div>
-          <div class="rev-card c-green">
-            <div class="rev-label">Neto Colectivo</div>
-            <div class="rev-value" id="rev-net">—</div>
-            <div class="rev-sub">Comisión menos Stripe</div>
+          <div class="rev-card hero">
+            <div class="rev-label">// Ingreso promotor</div>
+            <div class="rev-value" id="rev-promoter">—</div>
+            <div class="rev-sub">Precio base · a cobrar al promotor</div>
           </div>
         </div>
       </div>
@@ -459,12 +455,6 @@
       return '$' + Math.round(n).toLocaleString('es-MX') + ' MXN';
     }
 
-    function mxnShort(n) {
-      if (n >= 1000000) return '$' + (n / 1000000).toFixed(1) + 'M';
-      if (n >= 1000) return '$' + Math.round(n / 1000) + 'K';
-      return '$' + Math.round(n).toLocaleString('es-MX');
-    }
-
     // ── ATTENDANCE STATS ──────────────────────────────────────────────────
     function renderStats(data) {
       const paid = data.filter(r => r.payment_status === 'paid');
@@ -484,26 +474,20 @@
     // ── REVENUE STATS ─────────────────────────────────────────────────────
     function renderRevenue(data) {
       const paid = data.filter(r => r.payment_status === 'paid');
-      let gross = 0, commission = 0, stripeEst = 0;
+      let gross = 0, commission = 0, promoterBase = 0;
 
       for (const r of paid) {
         const tier = parseTier(r.student_name);
         const cfg  = TIER_CONFIG[tier];
         if (!cfg) continue;
-        const charged   = Math.round(cfg.base * 1.06);
-        const fee       = cfg.base * 0.06;
-        const stripe    = charged * 0.036 + 3.50;
-        gross      += charged;
-        commission += fee;
-        stripeEst  += stripe;
+        gross        += Math.round(cfg.base * 1.06);  // what buyer paid
+        commission   += cfg.base * 0.06;              // Colectivo's 6%
+        promoterBase += cfg.base;                     // base price to promoter
       }
 
-      const net = commission - stripeEst;
-
-      document.getElementById('rev-gross').textContent      = mxnShort(gross);
-      document.getElementById('rev-commission').textContent = mxnShort(commission);
-      document.getElementById('rev-stripe').textContent     = mxnShort(stripeEst);
-      document.getElementById('rev-net').textContent        = mxnShort(net < 0 ? 0 : net);
+      document.getElementById('rev-gross').textContent    = mxn(gross);
+      document.getElementById('rev-commission').textContent = mxn(commission);
+      document.getElementById('rev-promoter').textContent = mxn(promoterBase);
     }
 
     // ── TIER BREAKDOWN ────────────────────────────────────────────────────
@@ -530,7 +514,7 @@
         document.getElementById(`tier-${key}-sold`).textContent = d.sold;
         document.getElementById(`tier-${key}-cap`).textContent  = '/ ' + cfg.capacity;
         document.getElementById(`tier-${key}-bar`).style.width  = Math.min(pct, 100) + '%';
-        document.getElementById(`tier-${key}-rev`).textContent  = mxn(d.gross);
+        document.getElementById(`tier-${key}-rev`).textContent  = mxn(d.gross);  // full number
         document.getElementById(`tier-${key}-in`).textContent   = d.checkedIn + ' de ' + d.sold;
         document.getElementById(`tier-${key}-pct`).textContent  = pct + '% vendido';
       }
