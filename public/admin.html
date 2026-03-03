@@ -8,22 +8,14 @@
     @import url('https://fonts.googleapis.com/css2?family=Google+Sans+Flex&family=Space+Mono:wght@400;700&display=swap');
 
     * { box-sizing: border-box; margin: 0; padding: 0; }
-
     :root {
-      --black: #080808;
-      --white: #f5f0e8;
-      --accent: #FF3B1F;
-      --yellow: #F5E642;
+      --black: #080808; --white: #f5f0e8;
+      --accent: #FF3B1F; --yellow: #F5E642;
+      --green: #27ae60; --border: #1a1a1a;
     }
+    body { font-family: 'Google Sans Flex', sans-serif; background: var(--black); color: var(--white); min-height: 100vh; }
 
-    body {
-      font-family: 'Google Sans Flex', sans-serif;
-      background: var(--black);
-      color: var(--white);
-      min-height: 100vh;
-    }
-
-    /* LOGIN */
+    /* ── LOGIN ── */
     .login-screen {
       display: flex; align-items: center; justify-content: center;
       min-height: 100vh; padding: 24px;
@@ -31,278 +23,151 @@
         repeating-linear-gradient(0deg, transparent, transparent 39px, #111 39px, #111 40px),
         repeating-linear-gradient(90deg, transparent, transparent 39px, #111 39px, #111 40px);
     }
-    .login-card {
-      background: #111; border: 1px solid #222;
-      padding: 48px 40px; max-width: 360px; width: 100%;
-      text-align: center;
-    }
-    .login-tag {
-      font-family: 'Space Mono', monospace;
-      font-size: 10px; letter-spacing: 4px; color: var(--accent);
-      text-transform: uppercase; margin-bottom: 16px;
-    }
-    .login-card h1 {
-      font-size: 32px; font-weight: 800; letter-spacing: -1px;
-      color: var(--white); margin-bottom: 4px;
-    }
-    .login-card p {
-      font-family: 'Space Mono', monospace;
-      font-size: 11px; letter-spacing: 2px; color: #444;
-      text-transform: uppercase; margin-bottom: 32px;
-    }
-    .login-card input {
-      width: 100%; padding: 14px 16px;
-      background: #1a1a1a; border: 1px solid #222;
-      font-size: 14px; color: var(--white); outline: none;
-      font-family: 'Google Sans Flex', sans-serif;
-      margin-bottom: 12px;
-      transition: border-color 0.15s;
-    }
+    .login-card { background: #111; border: 1px solid #222; padding: 48px 40px; max-width: 360px; width: 100%; text-align: center; }
+    .login-tag { font-family: 'Space Mono', monospace; font-size: 10px; letter-spacing: 4px; color: var(--accent); text-transform: uppercase; margin-bottom: 16px; }
+    .login-card h1 { font-size: 32px; font-weight: 800; letter-spacing: -1px; color: var(--white); margin-bottom: 4px; }
+    .login-card p { font-family: 'Space Mono', monospace; font-size: 11px; letter-spacing: 2px; color: #444; text-transform: uppercase; margin-bottom: 32px; }
+    .login-card input { width: 100%; padding: 14px 16px; background: #1a1a1a; border: 1px solid #222; font-size: 14px; color: var(--white); outline: none; font-family: 'Google Sans Flex', sans-serif; margin-bottom: 12px; transition: border-color 0.15s; }
     .login-card input:focus { border-color: var(--accent); }
     .login-card input::placeholder { color: #444; }
-    .login-card button {
-      width: 100%; padding: 14px;
-      background: var(--accent); color: white; border: none;
-      font-size: 13px; font-weight: 700; letter-spacing: 2px;
-      text-transform: uppercase; cursor: pointer;
-      font-family: 'Google Sans Flex', sans-serif;
-      transition: opacity 0.2s;
-    }
+    .login-card button { width: 100%; padding: 14px; background: var(--accent); color: white; border: none; font-size: 13px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; cursor: pointer; font-family: 'Google Sans Flex', sans-serif; transition: opacity 0.2s; }
     .login-card button:hover { opacity: 0.85; }
-    .login-error {
-      font-size: 12px; color: var(--accent);
-      margin-top: 12px; display: none;
-      font-family: 'Space Mono', monospace;
-    }
+    .login-error { font-size: 12px; color: var(--accent); margin-top: 12px; display: none; font-family: 'Space Mono', monospace; }
 
-    /* DASHBOARD */
+    /* ── DASHBOARD ── */
     .dashboard { display: none; }
 
-    nav {
-      padding: 20px 32px;
-      display: flex; justify-content: space-between; align-items: center;
-      border-bottom: 1px solid #1a1a1a;
-      position: sticky; top: 0; background: var(--black); z-index: 10;
-    }
-    .nav-left {
-      display: flex; align-items: center; gap: 20px;
-    }
-    .nav-logo {
-      font-family: 'Space Mono', monospace;
-      font-weight: 700; font-size: 13px; letter-spacing: 4px;
-      color: var(--white); opacity: 0.4; text-decoration: none;
-    }
-    .nav-event {
-      font-family: 'Space Mono', monospace;
-      font-size: 11px; letter-spacing: 2px; color: #333;
-      text-transform: uppercase;
-    }
-    .scan-btn {
-      font-family: 'Space Mono', monospace;
-      font-size: 11px; letter-spacing: 2px;
-      color: var(--black); background: var(--white);
-      padding: 8px 16px; text-decoration: none;
-      font-weight: 700; text-transform: uppercase;
-      transition: opacity 0.2s;
-    }
+    nav { padding: 16px 32px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); position: sticky; top: 0; background: var(--black); z-index: 10; }
+    .nav-left { display: flex; align-items: center; gap: 20px; }
+    .nav-logo { font-family: 'Space Mono', monospace; font-weight: 700; font-size: 13px; letter-spacing: 4px; color: var(--white); opacity: 0.4; text-decoration: none; }
+    .nav-event { font-family: 'Space Mono', monospace; font-size: 11px; letter-spacing: 2px; color: #333; text-transform: uppercase; }
+    .nav-right { display: flex; align-items: center; gap: 12px; }
+    .scan-btn { font-family: 'Space Mono', monospace; font-size: 11px; letter-spacing: 2px; color: var(--black); background: var(--white); padding: 8px 16px; text-decoration: none; font-weight: 700; text-transform: uppercase; transition: opacity 0.2s; }
     .scan-btn:hover { opacity: 0.8; }
+    .last-update { font-family: 'Space Mono', monospace; font-size: 10px; letter-spacing: 1px; color: #333; }
 
-    .main { padding: 32px; }
+    .main { padding: 28px 32px; display: flex; flex-direction: column; gap: 24px; }
 
-    /* STATS */
-    .stats {
-      display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      gap: 2px; margin-bottom: 32px;
-    }
-    .stat-card {
-      background: #111; border: 1px solid #1a1a1a;
-      padding: 24px 28px;
-    }
-    .stat-label {
-      font-family: 'Space Mono', monospace;
-      font-size: 10px; letter-spacing: 3px; color: #444;
-      text-transform: uppercase; margin-bottom: 10px;
-    }
-    .stat-value {
-      font-size: 40px; font-weight: 800;
-      letter-spacing: -2px; color: var(--white);
-    }
-    .stat-card.accent .stat-value { color: var(--accent); }
-    .stat-card.yellow .stat-value { color: var(--yellow); }
+    /* ── SECTION HEADER ── */
+    .section-label { font-family: 'Space Mono', monospace; font-size: 10px; letter-spacing: 4px; color: #333; text-transform: uppercase; margin-bottom: 12px; }
 
-    /* SEARCH */
-    .controls {
-      display: flex; gap: 12px; margin-bottom: 16px; align-items: center;
-    }
-    .search-wrap { flex: 1; position: relative; }
-    .search-wrap input {
-      width: 100%; padding: 12px 16px;
-      background: #111; border: 1px solid #1a1a1a;
-      font-size: 14px; color: var(--white); outline: none;
-      font-family: 'Google Sans Flex', sans-serif;
-      transition: border-color 0.15s;
-    }
+    /* ── STAT CARDS ROW (attendance) ── */
+    .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 2px; }
+    .stat-card { background: #111; border: 1px solid var(--border); padding: 20px 24px; }
+    .stat-label { font-family: 'Space Mono', monospace; font-size: 10px; letter-spacing: 3px; color: #444; text-transform: uppercase; margin-bottom: 8px; }
+    .stat-value { font-size: 44px; font-weight: 800; letter-spacing: -2px; color: var(--white); line-height: 1; }
+    .stat-card.c-accent .stat-value { color: var(--accent); }
+    .stat-card.c-yellow .stat-value { color: var(--yellow); }
+    .stat-card.c-green .stat-value { color: var(--green); }
+    .stat-sub { font-family: 'Space Mono', monospace; font-size: 10px; letter-spacing: 1px; color: #333; margin-top: 6px; }
+
+    /* ── REVENUE ROW ── */
+    .revenue-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 2px; }
+    .rev-card { background: #0f0f0f; border: 1px solid var(--border); padding: 20px 24px; position: relative; overflow: hidden; }
+    .rev-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px; }
+    .rev-card.c-white::before { background: #333; }
+    .rev-card.c-yellow::before { background: var(--yellow); }
+    .rev-card.c-red::before { background: var(--accent); }
+    .rev-card.c-green::before { background: var(--green); }
+    .rev-label { font-family: 'Space Mono', monospace; font-size: 10px; letter-spacing: 3px; color: #444; text-transform: uppercase; margin-bottom: 10px; }
+    .rev-value { font-size: 28px; font-weight: 800; letter-spacing: -1px; color: var(--white); }
+    .rev-card.c-yellow .rev-value { color: var(--yellow); }
+    .rev-card.c-red .rev-value { color: var(--accent); }
+    .rev-card.c-green .rev-value { color: var(--green); }
+    .rev-sub { font-family: 'Space Mono', monospace; font-size: 10px; letter-spacing: 1px; color: #333; margin-top: 6px; }
+
+    /* ── TIER BREAKDOWN ── */
+    .tiers-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 2px; }
+    .tier-card { background: #0f0f0f; border: 1px solid var(--border); padding: 24px; position: relative; overflow: hidden; }
+    .tier-card-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px; }
+    .tier-card-name { font-size: 18px; font-weight: 800; letter-spacing: -0.5px; }
+    .tier-card-badge { font-family: 'Space Mono', monospace; font-size: 10px; letter-spacing: 2px; padding: 4px 10px; text-transform: uppercase; font-weight: 700; }
+    .tier-card.t-early .tier-card-name { color: var(--yellow); }
+    .tier-card.t-early .tier-card-badge { color: var(--black); background: var(--yellow); }
+    .tier-card.t-general .tier-card-name { color: var(--white); }
+    .tier-card.t-general .tier-card-badge { color: #444; border: 1px solid #333; }
+    .tier-card.t-vip .tier-card-name { color: var(--accent); }
+    .tier-card.t-vip .tier-card-badge { color: white; background: var(--accent); }
+
+    .tier-sold-row { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 8px; }
+    .tier-sold-num { font-size: 36px; font-weight: 800; letter-spacing: -2px; }
+    .tier-capacity { font-family: 'Space Mono', monospace; font-size: 12px; color: #555; }
+    .tier-card.t-early .tier-sold-num { color: var(--yellow); }
+    .tier-card.t-general .tier-sold-num { color: var(--white); }
+    .tier-card.t-vip .tier-sold-num { color: var(--accent); }
+
+    .progress-track { background: #1a1a1a; height: 4px; margin-bottom: 16px; }
+    .progress-fill { height: 100%; transition: width 0.5s ease; }
+    .tier-card.t-early .progress-fill { background: var(--yellow); }
+    .tier-card.t-general .progress-fill { background: var(--white); }
+    .tier-card.t-vip .progress-fill { background: var(--accent); }
+
+    .tier-meta { display: flex; flex-direction: column; gap: 6px; }
+    .tier-meta-row { display: flex; justify-content: space-between; align-items: center; }
+    .tier-meta-label { font-family: 'Space Mono', monospace; font-size: 10px; letter-spacing: 2px; color: #444; text-transform: uppercase; }
+    .tier-meta-value { font-family: 'Space Mono', monospace; font-size: 12px; color: #888; }
+    .tier-meta-value.highlight { color: var(--white); font-weight: 700; }
+
+    /* ── CONTROLS + TABLE ── */
+    .controls { display: flex; gap: 12px; align-items: center; }
+    .search-wrap { flex: 1; }
+    .search-wrap input { width: 100%; padding: 12px 16px; background: #111; border: 1px solid var(--border); font-size: 14px; color: var(--white); outline: none; font-family: 'Google Sans Flex', sans-serif; transition: border-color 0.15s; }
     .search-wrap input:focus { border-color: #333; }
-    .search-wrap input::placeholder { color: #444; }
-    .refresh-btn {
-      font-family: 'Space Mono', monospace;
-      font-size: 10px; letter-spacing: 2px;
-      color: #444; background: #111; border: 1px solid #1a1a1a;
-      padding: 12px 16px; cursor: pointer; text-transform: uppercase;
-      transition: color 0.2s, border-color 0.2s;
-      white-space: nowrap;
-    }
+    .search-wrap input::placeholder { color: #333; }
+    .refresh-btn { font-family: 'Space Mono', monospace; font-size: 10px; letter-spacing: 2px; color: #444; background: #111; border: 1px solid var(--border); padding: 12px 16px; cursor: pointer; text-transform: uppercase; transition: color 0.2s, border-color 0.2s; white-space: nowrap; }
     .refresh-btn:hover { color: var(--white); border-color: #333; }
 
-    /* TABLE */
-    .table-wrap {
-      border: 1px solid #1a1a1a; overflow-x: auto;
-    }
+    .table-wrap { border: 1px solid var(--border); overflow-x: auto; }
     table { width: 100%; border-collapse: collapse; }
-    thead { background: #111; border-bottom: 1px solid #1a1a1a; }
-    thead th {
-      padding: 14px 16px; text-align: left;
-      font-family: 'Space Mono', monospace;
-      font-size: 10px; letter-spacing: 3px; color: #444;
-      text-transform: uppercase; font-weight: 400;
-    }
-    tbody tr {
-      border-bottom: 1px solid #111;
-      cursor: pointer; transition: background 0.1s;
-    }
-    tbody tr:hover { background: #111; }
-    tbody td { padding: 14px 16px; font-size: 14px; color: #888; }
-    tbody td strong { color: var(--white); }
-    tbody td .tier-tag {
-      font-family: 'Space Mono', monospace;
-      font-size: 10px; letter-spacing: 2px; color: #555;
-    }
-
-    .badge-in {
-      background: transparent; border: 1px solid #27ae60;
-      color: #27ae60; padding: 4px 10px;
-      font-size: 10px; font-weight: 700; letter-spacing: 2px;
-      font-family: 'Space Mono', monospace; text-transform: uppercase;
-    }
-    .badge-out {
-      background: transparent; border: 1px solid #222;
-      color: #444; padding: 4px 10px;
-      font-size: 10px; font-weight: 700; letter-spacing: 2px;
-      font-family: 'Space Mono', monospace; text-transform: uppercase;
-    }
-    .empty {
-      text-align: center; padding: 60px;
-      font-family: 'Space Mono', monospace;
-      font-size: 11px; letter-spacing: 2px; color: #333;
-    }
-    .row-hint {
-      font-family: 'Space Mono', monospace;
-      font-size: 10px; color: #1f1f1f; letter-spacing: 2px;
-      margin-top: 10px; text-align: right;
-    }
+    thead { background: #0f0f0f; border-bottom: 1px solid var(--border); }
+    thead th { padding: 12px 16px; text-align: left; font-family: 'Space Mono', monospace; font-size: 10px; letter-spacing: 3px; color: #333; text-transform: uppercase; font-weight: 400; }
+    tbody tr { border-bottom: 1px solid #0e0e0e; cursor: pointer; transition: background 0.1s; }
+    tbody tr:hover { background: #0e0e0e; }
+    tbody td { padding: 12px 16px; font-size: 13px; color: #666; }
+    tbody td strong { color: #aaa; }
+    .tier-pill { font-family: 'Space Mono', monospace; font-size: 9px; letter-spacing: 2px; padding: 3px 8px; text-transform: uppercase; font-weight: 700; display: inline-block; }
+    .tier-pill.t-early { color: var(--black); background: var(--yellow); }
+    .tier-pill.t-general { color: #555; border: 1px solid #333; }
+    .tier-pill.t-vip { color: white; background: var(--accent); }
+    .badge-in { background: transparent; border: 1px solid var(--green); color: var(--green); padding: 3px 8px; font-size: 9px; font-weight: 700; letter-spacing: 2px; font-family: 'Space Mono', monospace; text-transform: uppercase; }
+    .badge-out { background: transparent; border: 1px solid #222; color: #333; padding: 3px 8px; font-size: 9px; font-weight: 700; letter-spacing: 2px; font-family: 'Space Mono', monospace; text-transform: uppercase; }
+    .empty { text-align: center; padding: 60px; font-family: 'Space Mono', monospace; font-size: 11px; letter-spacing: 2px; color: #222; }
+    .row-hint { font-family: 'Space Mono', monospace; font-size: 10px; color: #1f1f1f; letter-spacing: 2px; margin-top: 8px; text-align: right; }
 
     /* ── DETAIL MODAL ── */
-    .modal-overlay {
-      display: none; position: fixed; inset: 0; z-index: 100;
-      background: rgba(8, 8, 8, 0.92);
-      align-items: center; justify-content: center;
-      padding: 24px;
-    }
+    .modal-overlay { display: none; position: fixed; inset: 0; z-index: 100; background: rgba(8,8,8,0.93); align-items: center; justify-content: center; padding: 24px; }
     .modal-overlay.open { display: flex; }
-
-    .modal {
-      background: #111; border: 1px solid #222;
-      max-width: 480px; width: 100%;
-      max-height: 90vh; overflow-y: auto;
-    }
-
-    .modal-header {
-      padding: 24px 28px;
-      border-bottom: 1px solid #1a1a1a;
-      display: flex; justify-content: space-between; align-items: flex-start;
-    }
-    .modal-tag {
-      font-family: 'Space Mono', monospace;
-      font-size: 10px; letter-spacing: 4px; color: var(--accent);
-      text-transform: uppercase; margin-bottom: 8px;
-    }
-    .modal-name {
-      font-size: 22px; font-weight: 800;
-      letter-spacing: -0.5px; color: var(--white);
-    }
-    .modal-close {
-      background: none; border: none; color: #444;
-      font-size: 22px; cursor: pointer; padding: 0 4px;
-      line-height: 1; transition: color 0.15s;
-    }
+    .modal { background: #111; border: 1px solid #222; max-width: 480px; width: 100%; max-height: 90vh; overflow-y: auto; }
+    .modal-header { padding: 24px 28px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: flex-start; }
+    .modal-tag { font-family: 'Space Mono', monospace; font-size: 10px; letter-spacing: 4px; color: var(--accent); text-transform: uppercase; margin-bottom: 8px; }
+    .modal-name { font-size: 22px; font-weight: 800; letter-spacing: -0.5px; color: var(--white); }
+    .modal-close { background: none; border: none; color: #444; font-size: 22px; cursor: pointer; padding: 0 4px; line-height: 1; transition: color 0.15s; }
     .modal-close:hover { color: var(--white); }
-
     .modal-body { padding: 24px 28px; }
-
-    .detail-row {
-      display: flex; gap: 12px;
-      padding: 12px 0; border-bottom: 1px solid #1a1a1a;
-      align-items: baseline;
-    }
+    .detail-row { display: flex; gap: 12px; padding: 12px 0; border-bottom: 1px solid var(--border); align-items: baseline; }
     .detail-row:last-child { border-bottom: none; }
-    .detail-label {
-      font-family: 'Space Mono', monospace;
-      font-size: 10px; letter-spacing: 2px; color: #444;
-      text-transform: uppercase; min-width: 90px; flex-shrink: 0;
-    }
+    .detail-label { font-family: 'Space Mono', monospace; font-size: 10px; letter-spacing: 2px; color: #444; text-transform: uppercase; min-width: 90px; flex-shrink: 0; }
     .detail-value { font-size: 14px; color: var(--white); word-break: break-all; }
     .detail-value.muted { color: #555; }
-    .detail-value .green { color: #27ae60; }
-    .detail-value .red { color: var(--accent); }
-
-    .ticket-id-box {
-      background: #0f0f0f; border: 1px solid #1a1a1a;
-      padding: 10px 14px; margin-top: 4px;
-      font-family: 'Space Mono', monospace;
-      font-size: 11px; color: #555;
-      word-break: break-all;
-    }
-
-    .modal-actions {
-      padding: 20px 28px;
-      border-top: 1px solid #1a1a1a;
-      display: flex; gap: 10px;
-    }
-    .btn-resend {
-      flex: 1; padding: 13px;
-      background: var(--accent); color: white; border: none;
-      font-size: 12px; font-weight: 700; letter-spacing: 2px;
-      text-transform: uppercase; cursor: pointer;
-      font-family: 'Google Sans Flex', sans-serif;
-      transition: opacity 0.2s;
-    }
+    .green { color: var(--green); }
+    .red { color: var(--accent); }
+    .ticket-id-box { background: #0f0f0f; border: 1px solid var(--border); padding: 10px 14px; margin-top: 4px; font-family: 'Space Mono', monospace; font-size: 11px; color: #555; word-break: break-all; }
+    .modal-actions { padding: 20px 28px; border-top: 1px solid var(--border); display: flex; gap: 10px; }
+    .btn-resend { flex: 1; padding: 13px; background: var(--accent); color: white; border: none; font-size: 12px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; cursor: pointer; font-family: 'Google Sans Flex', sans-serif; transition: opacity 0.2s; }
     .btn-resend:hover { opacity: 0.85; }
     .btn-resend:disabled { opacity: 0.4; cursor: not-allowed; }
-    .btn-cancel {
-      padding: 13px 20px;
-      background: transparent; color: #555; border: 1px solid #222;
-      font-size: 12px; font-weight: 700; letter-spacing: 2px;
-      text-transform: uppercase; cursor: pointer;
-      font-family: 'Google Sans Flex', sans-serif;
-      transition: color 0.2s, border-color 0.2s;
-    }
+    .btn-cancel { padding: 13px 20px; background: transparent; color: #555; border: 1px solid #222; font-size: 12px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; cursor: pointer; font-family: 'Google Sans Flex', sans-serif; transition: color 0.2s, border-color 0.2s; }
     .btn-cancel:hover { color: var(--white); border-color: #444; }
-
-    .resend-feedback {
-      font-family: 'Space Mono', monospace;
-      font-size: 11px; letter-spacing: 2px;
-      text-align: center; padding: 10px 28px;
-      display: none;
-    }
-    .resend-feedback.ok { color: #27ae60; }
+    .resend-feedback { font-family: 'Space Mono', monospace; font-size: 11px; letter-spacing: 2px; text-align: center; padding: 10px 28px; display: none; }
+    .resend-feedback.ok { color: var(--green); }
     .resend-feedback.err { color: var(--accent); }
 
-    @media (max-width: 768px) {
-      .stats { grid-template-columns: repeat(2, 1fr); }
+    @media (max-width: 900px) {
+      .stats-grid, .revenue-grid { grid-template-columns: repeat(2, 1fr); }
+      .tiers-grid { grid-template-columns: 1fr; }
       .main { padding: 20px; }
-      nav { padding: 16px 20px; }
-      .nav-event { display: none; }
+      nav { padding: 14px 20px; }
+      .nav-event, .last-update { display: none; }
     }
   </style>
 </head>
@@ -322,60 +187,194 @@
 
   <!-- Dashboard -->
   <div class="dashboard" id="dashboard">
+
     <nav>
       <div class="nav-left">
         <a class="nav-logo" href="/">COLECTIVO</a>
         <span class="nav-event">// Aniversario Caballeros</span>
       </div>
-      <a class="scan-btn" href="/scan.html">Escanear puerta →</a>
+      <div class="nav-right">
+        <span class="last-update" id="last-update"></span>
+        <a class="scan-btn" href="/scan.html">Escanear puerta →</a>
+      </div>
     </nav>
 
     <div class="main">
-      <div class="stats">
-        <div class="stat-card">
-          <div class="stat-label">// Boletos vendidos</div>
-          <div class="stat-value" id="stat-total">—</div>
-        </div>
-        <div class="stat-card accent">
-          <div class="stat-label">// Ingresaron</div>
-          <div class="stat-value" id="stat-checked">—</div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-label">// Pendientes</div>
-          <div class="stat-value" id="stat-pending">—</div>
-        </div>
-        <div class="stat-card yellow">
-          <div class="stat-label">// % ingreso</div>
-          <div class="stat-value" id="stat-pct">—</div>
+
+      <!-- ── ASISTENCIA ── -->
+      <div>
+        <div class="section-label">// Asistencia</div>
+        <div class="stats-grid">
+          <div class="stat-card">
+            <div class="stat-label">Boletos vendidos</div>
+            <div class="stat-value" id="stat-total">—</div>
+            <div class="stat-sub" id="stat-total-cap"></div>
+          </div>
+          <div class="stat-card c-green">
+            <div class="stat-label">Ingresaron</div>
+            <div class="stat-value" id="stat-checked">—</div>
+            <div class="stat-sub" id="stat-pct-sub"></div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Pendientes</div>
+            <div class="stat-value" id="stat-pending">—</div>
+          </div>
+          <div class="stat-card c-yellow">
+            <div class="stat-label">% Ingreso</div>
+            <div class="stat-value" id="stat-pct">—</div>
+          </div>
         </div>
       </div>
 
-      <div class="controls">
-        <div class="search-wrap">
-          <input type="text" id="search" placeholder="Buscar por nombre, tier, teléfono o correo..." oninput="filterTable()" />
+      <!-- ── INGRESOS ── -->
+      <div>
+        <div class="section-label">// Ingresos · estimado</div>
+        <div class="revenue-grid">
+          <div class="rev-card c-white">
+            <div class="rev-label">Total recaudado</div>
+            <div class="rev-value" id="rev-gross">—</div>
+            <div class="rev-sub">Cobrado a clientes</div>
+          </div>
+          <div class="rev-card c-yellow">
+            <div class="rev-label">Comisión Colectivo</div>
+            <div class="rev-value" id="rev-commission">—</div>
+            <div class="rev-sub">6% sobre precio base</div>
+          </div>
+          <div class="rev-card c-red">
+            <div class="rev-label">Cargos Stripe</div>
+            <div class="rev-value" id="rev-stripe">—</div>
+            <div class="rev-sub">3.6% + $3.50 / boleto est.</div>
+          </div>
+          <div class="rev-card c-green">
+            <div class="rev-label">Neto Colectivo</div>
+            <div class="rev-value" id="rev-net">—</div>
+            <div class="rev-sub">Comisión menos Stripe</div>
+          </div>
         </div>
-        <button class="refresh-btn" onclick="loadData()">↻ Actualizar</button>
       </div>
 
-      <div class="table-wrap">
-        <table>
-          <thead>
-            <tr>
-              <th>Nombre</th>
-              <th>Tier</th>
-              <th>Correo</th>
-              <th>Fecha</th>
-              <th>Estado</th>
-            </tr>
-          </thead>
-          <tbody id="table-body">
-            <tr><td colspan="5" class="empty">Cargando...</td></tr>
-          </tbody>
-        </table>
+      <!-- ── TIERS ── -->
+      <div>
+        <div class="section-label">// Boletos por tier</div>
+        <div class="tiers-grid">
+
+          <div class="tier-card t-early">
+            <div class="tier-card-header">
+              <div class="tier-card-name">EARLY BIRD</div>
+              <div class="tier-card-badge">$650 base</div>
+            </div>
+            <div class="tier-sold-row">
+              <div class="tier-sold-num" id="tier-early-sold">—</div>
+              <div class="tier-capacity" id="tier-early-cap">/ 150</div>
+            </div>
+            <div class="progress-track">
+              <div class="progress-fill" id="tier-early-bar" style="width:0%"></div>
+            </div>
+            <div class="tier-meta">
+              <div class="tier-meta-row">
+                <span class="tier-meta-label">Recaudado</span>
+                <span class="tier-meta-value highlight" id="tier-early-rev">—</span>
+              </div>
+              <div class="tier-meta-row">
+                <span class="tier-meta-label">Ingresaron</span>
+                <span class="tier-meta-value" id="tier-early-in">—</span>
+              </div>
+              <div class="tier-meta-row">
+                <span class="tier-meta-label">Aforo</span>
+                <span class="tier-meta-value" id="tier-early-pct">—</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="tier-card t-general">
+            <div class="tier-card-header">
+              <div class="tier-card-name">GENERAL</div>
+              <div class="tier-card-badge">$950 base</div>
+            </div>
+            <div class="tier-sold-row">
+              <div class="tier-sold-num" id="tier-general-sold">—</div>
+              <div class="tier-capacity" id="tier-general-cap">/ 500</div>
+            </div>
+            <div class="progress-track">
+              <div class="progress-fill" id="tier-general-bar" style="width:0%"></div>
+            </div>
+            <div class="tier-meta">
+              <div class="tier-meta-row">
+                <span class="tier-meta-label">Recaudado</span>
+                <span class="tier-meta-value highlight" id="tier-general-rev">—</span>
+              </div>
+              <div class="tier-meta-row">
+                <span class="tier-meta-label">Ingresaron</span>
+                <span class="tier-meta-value" id="tier-general-in">—</span>
+              </div>
+              <div class="tier-meta-row">
+                <span class="tier-meta-label">Aforo</span>
+                <span class="tier-meta-value" id="tier-general-pct">—</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="tier-card t-vip">
+            <div class="tier-card-header">
+              <div class="tier-card-name">VIP</div>
+              <div class="tier-card-badge">$1,800 base</div>
+            </div>
+            <div class="tier-sold-row">
+              <div class="tier-sold-num" id="tier-vip-sold">—</div>
+              <div class="tier-capacity" id="tier-vip-cap">/ 50</div>
+            </div>
+            <div class="progress-track">
+              <div class="progress-fill" id="tier-vip-bar" style="width:0%"></div>
+            </div>
+            <div class="tier-meta">
+              <div class="tier-meta-row">
+                <span class="tier-meta-label">Recaudado</span>
+                <span class="tier-meta-value highlight" id="tier-vip-rev">—</span>
+              </div>
+              <div class="tier-meta-row">
+                <span class="tier-meta-label">Ingresaron</span>
+                <span class="tier-meta-value" id="tier-vip-in">—</span>
+              </div>
+              <div class="tier-meta-row">
+                <span class="tier-meta-label">Aforo</span>
+                <span class="tier-meta-value" id="tier-vip-pct">—</span>
+              </div>
+            </div>
+          </div>
+
+        </div>
       </div>
-      <p class="row-hint">// Toca un registro para ver detalles</p>
-    </div>
-  </div>
+
+      <!-- ── TABLE ── -->
+      <div>
+        <div class="controls">
+          <div class="search-wrap">
+            <input type="text" id="search" placeholder="Buscar nombre, tier, teléfono o correo..." oninput="filterTable()" />
+          </div>
+          <button class="refresh-btn" onclick="loadData()">↻ Actualizar</button>
+        </div>
+
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Nombre</th>
+                <th>Tier</th>
+                <th>Correo</th>
+                <th>Fecha</th>
+                <th>Estado</th>
+              </tr>
+            </thead>
+            <tbody id="table-body">
+              <tr><td colspan="5" class="empty">Cargando...</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p class="row-hint">// Toca un registro para ver detalles y reenviar QR</p>
+      </div>
+
+    </div><!-- /main -->
+  </div><!-- /dashboard -->
 
   <!-- Detail Modal -->
   <div class="modal-overlay" id="modal-overlay" onclick="closeModalOnBg(event)">
@@ -387,17 +386,10 @@
         </div>
         <button class="modal-close" onclick="closeModal()">✕</button>
       </div>
-
-      <div class="modal-body" id="modal-body">
-        <!-- filled by JS -->
-      </div>
-
+      <div class="modal-body" id="modal-body"></div>
       <div class="resend-feedback" id="resend-feedback"></div>
-
       <div class="modal-actions">
-        <button class="btn-resend" id="btn-resend" onclick="resendQR()">
-          Reenviar QR por email →
-        </button>
+        <button class="btn-resend" id="btn-resend" onclick="resendQR()">Reenviar QR por email →</button>
         <button class="btn-cancel" onclick="closeModal()">Cerrar</button>
       </div>
     </div>
@@ -405,22 +397,28 @@
 
   <script>
     const API = 'https://api.colectivo.live';
-    let allData = [];
-    let renderedData = [];
-    let savedPassword = '';
-    let activeEmail = '';
 
+    // Tier config — must match server.js TIERS
+    const TIER_CONFIG = {
+      'Early Bird': { key: 'early',   base: 650,  capacity: 150 },
+      'General':    { key: 'general', base: 950,  capacity: 500 },
+      'VIP':        { key: 'vip',     base: 1800, capacity: 50  }
+    };
+
+    let allData = [], renderedData = [], savedPassword = '', activeEmail = '';
+
+    // ── AUTH ──────────────────────────────────────────────────────────────
     function login() {
       const pw = document.getElementById('password-input').value;
       if (!pw) return;
       savedPassword = pw;
       loadData();
     }
-
     document.getElementById('password-input').addEventListener('keydown', e => {
       if (e.key === 'Enter') login();
     });
 
+    // ── DATA ──────────────────────────────────────────────────────────────
     async function loadData() {
       try {
         const res = await fetch(`${API}/admin/registrations?password=${encodeURIComponent(savedPassword)}&_t=${Date.now()}`);
@@ -432,21 +430,119 @@
         allData = data;
         document.getElementById('login-screen').style.display = 'none';
         document.getElementById('dashboard').style.display = 'block';
-        renderTable(data);
-        renderStats(data);
+        document.getElementById('last-update').textContent =
+          'Actualizado ' + new Date().toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' });
+        renderAll(data);
       } catch (err) {
         document.getElementById('login-error').style.display = 'block';
         document.getElementById('login-error').textContent = 'Error de conexión.';
       }
     }
 
+    function renderAll(data) {
+      renderStats(data);
+      renderRevenue(data);
+      renderTiers(data);
+      renderTable(data);
+    }
+
+    // ── HELPERS ───────────────────────────────────────────────────────────
+    function parseTier(studentName) {
+      const sn = studentName || '';
+      for (const name of Object.keys(TIER_CONFIG)) {
+        if (sn.includes(name)) return name;
+      }
+      return null;
+    }
+
+    function mxn(n) {
+      return '$' + Math.round(n).toLocaleString('es-MX') + ' MXN';
+    }
+
+    function mxnShort(n) {
+      if (n >= 1000000) return '$' + (n / 1000000).toFixed(1) + 'M';
+      if (n >= 1000) return '$' + Math.round(n / 1000) + 'K';
+      return '$' + Math.round(n).toLocaleString('es-MX');
+    }
+
+    // ── ATTENDANCE STATS ──────────────────────────────────────────────────
     function renderStats(data) {
-      const checked = data.filter(r => r.checked_in).length;
-      const pct = data.length ? Math.round((checked / data.length) * 100) : 0;
-      document.getElementById('stat-total').textContent = data.length;
+      const paid = data.filter(r => r.payment_status === 'paid');
+      const totalCap = Object.values(TIER_CONFIG).reduce((s, t) => s + t.capacity, 0);
+      const checked = paid.filter(r => r.checked_in).length;
+      const pct = paid.length ? Math.round((checked / paid.length) * 100) : 0;
+      const capPct = Math.round((paid.length / totalCap) * 100);
+
+      document.getElementById('stat-total').textContent = paid.length;
+      document.getElementById('stat-total-cap').textContent = capPct + '% del aforo total';
       document.getElementById('stat-checked').textContent = checked;
-      document.getElementById('stat-pending').textContent = data.length - checked;
-      document.getElementById('stat-pct').textContent = `${pct}%`;
+      document.getElementById('stat-pct-sub').textContent = pct + '% de vendidos';
+      document.getElementById('stat-pending').textContent = paid.length - checked;
+      document.getElementById('stat-pct').textContent = pct + '%';
+    }
+
+    // ── REVENUE STATS ─────────────────────────────────────────────────────
+    function renderRevenue(data) {
+      const paid = data.filter(r => r.payment_status === 'paid');
+      let gross = 0, commission = 0, stripeEst = 0;
+
+      for (const r of paid) {
+        const tier = parseTier(r.student_name);
+        const cfg  = TIER_CONFIG[tier];
+        if (!cfg) continue;
+        const charged   = Math.round(cfg.base * 1.06);
+        const fee       = cfg.base * 0.06;
+        const stripe    = charged * 0.036 + 3.50;
+        gross      += charged;
+        commission += fee;
+        stripeEst  += stripe;
+      }
+
+      const net = commission - stripeEst;
+
+      document.getElementById('rev-gross').textContent      = mxnShort(gross);
+      document.getElementById('rev-commission').textContent = mxnShort(commission);
+      document.getElementById('rev-stripe').textContent     = mxnShort(stripeEst);
+      document.getElementById('rev-net').textContent        = mxnShort(net < 0 ? 0 : net);
+    }
+
+    // ── TIER BREAKDOWN ────────────────────────────────────────────────────
+    function renderTiers(data) {
+      const paid = data.filter(r => r.payment_status === 'paid');
+      const tierData = {};
+      for (const [name, cfg] of Object.entries(TIER_CONFIG)) {
+        tierData[name] = { sold: 0, checkedIn: 0, gross: 0 };
+      }
+
+      for (const r of paid) {
+        const tier = parseTier(r.student_name);
+        const cfg  = TIER_CONFIG[tier];
+        if (!cfg || !tierData[tier]) continue;
+        tierData[tier].sold++;
+        tierData[tier].gross += Math.round(cfg.base * 1.06);
+        if (r.checked_in) tierData[tier].checkedIn++;
+      }
+
+      for (const [name, cfg] of Object.entries(TIER_CONFIG)) {
+        const key  = cfg.key;
+        const d    = tierData[name];
+        const pct  = Math.round((d.sold / cfg.capacity) * 100);
+        document.getElementById(`tier-${key}-sold`).textContent = d.sold;
+        document.getElementById(`tier-${key}-cap`).textContent  = '/ ' + cfg.capacity;
+        document.getElementById(`tier-${key}-bar`).style.width  = Math.min(pct, 100) + '%';
+        document.getElementById(`tier-${key}-rev`).textContent  = mxn(d.gross);
+        document.getElementById(`tier-${key}-in`).textContent   = d.checkedIn + ' de ' + d.sold;
+        document.getElementById(`tier-${key}-pct`).textContent  = pct + '% vendido';
+      }
+    }
+
+    // ── TABLE ─────────────────────────────────────────────────────────────
+    function tierPill(studentName) {
+      const tier = parseTier(studentName);
+      if (!tier) return `<span class="tier-pill t-general">${studentName || '—'}</span>`;
+      const key = TIER_CONFIG[tier].key;
+      const label = tier === 'Early Bird' ? 'E. Bird' : tier;
+      return `<span class="tier-pill t-${key}">${label}</span>`;
     }
 
     function renderTable(data) {
@@ -459,11 +555,13 @@
       tbody.innerHTML = data.map((r, i) => `
         <tr onclick="showDetail(${i})">
           <td><strong>${r.name}</strong></td>
-          <td><span class="tier-tag">${r.student_name || '—'}</span></td>
-          <td>${r.email}</td>
-          <td>${new Date(r.created_at).toLocaleDateString('es-MX', { day:'numeric', month:'short', hour:'2-digit', minute:'2-digit' })}</td>
+          <td>${tierPill(r.student_name)}</td>
+          <td style="color:#555">${r.email}</td>
+          <td style="color:#444;font-family:'Space Mono',monospace;font-size:11px">${
+            new Date(r.created_at).toLocaleDateString('es-MX', { day:'numeric', month:'short', hour:'2-digit', minute:'2-digit' })
+          }</td>
           <td>${r.checked_in
-            ? `<span class="badge-in">Ingresó</span>`
+            ? `<span class="badge-in">✓ Ingresó</span>`
             : `<span class="badge-out">Pendiente</span>`
           }</td>
         </tr>
@@ -479,29 +577,30 @@
         (r.phone || '').toLowerCase().includes(q)
       );
       renderTable(filtered);
-      renderStats(filtered);
+      // Don't update stats/tiers when filtering — keep global numbers
     }
 
-    // ── DETAIL MODAL ──
-
+    // ── DETAIL MODAL ──────────────────────────────────────────────────────
     function showDetail(index) {
       const r = renderedData[index];
       if (!r) return;
-
       activeEmail = r.email;
 
-      // Count how many tickets this email has in total
-      const sameEmail = allData.filter(x => x.email === r.email);
+      const sameEmail   = allData.filter(x => x.email === r.email);
       const totalTickets = sameEmail.length;
       const checkedCount = sameEmail.filter(x => x.checked_in).length;
+      const checkinTime  = r.checked_in_at
+        ? new Date(r.checked_in_at).toLocaleString('es-MX', { day:'numeric', month:'short', hour:'2-digit', minute:'2-digit' })
+        : null;
+
+      // Revenue for this order
+      const tier = parseTier(r.student_name);
+      const cfg  = TIER_CONFIG[tier];
+      const orderGross = cfg ? Math.round(cfg.base * 1.06) * totalTickets : null;
 
       document.getElementById('modal-tag').textContent =
         totalTickets > 1 ? `// ${totalTickets} boletos · ${checkedCount} ingresaron` : '// 1 boleto';
       document.getElementById('modal-name').textContent = r.name;
-
-      const checkinTime = r.checked_in_at
-        ? new Date(r.checked_in_at).toLocaleString('es-MX', { day:'numeric', month:'short', hour:'2-digit', minute:'2-digit' })
-        : null;
 
       document.getElementById('modal-body').innerHTML = `
         <div class="detail-row">
@@ -516,6 +615,11 @@
           <span class="detail-label">Tier</span>
           <span class="detail-value">${r.student_name || '—'}</span>
         </div>
+        ${orderGross ? `
+        <div class="detail-row">
+          <span class="detail-label">Cobrado</span>
+          <span class="detail-value">${mxn(orderGross)}</span>
+        </div>` : ''}
         <div class="detail-row">
           <span class="detail-label">Compra</span>
           <span class="detail-value">${new Date(r.created_at).toLocaleString('es-MX', { day:'numeric', month:'long', hour:'2-digit', minute:'2-digit' })}</span>
@@ -531,8 +635,7 @@
         <div class="detail-row">
           <span class="detail-label">Orden</span>
           <span class="detail-value">${checkedCount} / ${totalTickets} boletos escaneados</span>
-        </div>
-        ` : ''}
+        </div>` : ''}
         <div class="detail-row" style="flex-direction:column;gap:8px">
           <span class="detail-label">ID Boleto</span>
           <div class="ticket-id-box">${r.id}</div>
@@ -540,24 +643,17 @@
         </div>
       `;
 
-      // Reset resend button
       const btn = document.getElementById('btn-resend');
       btn.disabled = false;
       btn.textContent = totalTickets > 1
         ? `Reenviar ${totalTickets} QRs por email →`
         : 'Reenviar QR por email →';
       document.getElementById('resend-feedback').style.display = 'none';
-
       document.getElementById('modal-overlay').classList.add('open');
     }
 
-    function closeModal() {
-      document.getElementById('modal-overlay').classList.remove('open');
-    }
-
-    function closeModalOnBg(e) {
-      if (e.target === document.getElementById('modal-overlay')) closeModal();
-    }
+    function closeModal() { document.getElementById('modal-overlay').classList.remove('open'); }
+    function closeModalOnBg(e) { if (e.target === document.getElementById('modal-overlay')) closeModal(); }
 
     async function resendQR() {
       const btn = document.getElementById('btn-resend');
@@ -573,15 +669,12 @@
           body: JSON.stringify({ email: activeEmail, password: savedPassword })
         });
         const data = await res.json();
-
         if (res.ok) {
           feedback.textContent = `✓ Email reenviado a ${activeEmail}`;
           feedback.className = 'resend-feedback ok';
           feedback.style.display = 'block';
           btn.textContent = 'Enviado ✓';
-        } else {
-          throw new Error(data.error || 'Error desconocido');
-        }
+        } else { throw new Error(data.error || 'Error'); }
       } catch (err) {
         feedback.textContent = `✗ ${err.message}`;
         feedback.className = 'resend-feedback err';
@@ -592,9 +685,7 @@
     }
 
     // Auto-refresh every 30 seconds
-    setInterval(() => {
-      if (savedPassword) loadData();
-    }, 30000);
+    setInterval(() => { if (savedPassword) loadData(); }, 30000);
   </script>
 
 </body>
