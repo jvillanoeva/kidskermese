@@ -23,38 +23,89 @@ const stripe = Stripe(process.env.STRIPE_SECRET_KEY);
 
 const BASE_URL = process.env.BASE_URL || 'https://api.colectivo.live';
 
-// Ticket tiers — source of truth for pricing and capacity
-const TIERS = {
-  early:   { label: 'Early Bird',  price: 65000,  capacity: 150 },
-  general: { label: 'General',     price: 95000,  capacity: 500 },
-  vip:     { label: 'VIP',         price: 180000, capacity: 50  }
-};
+// ─────────────────────────────────────────────
+//  HELPER: load tiers for a given event slug
+// ─────────────────────────────────────────────
+async function getEventTiers(eventSlug) {
+  if (!eventSlug) return null;
+  const { data, error } = await supabase
+    .from('events')
+    .select('tiers, name')
+    .eq('slug', eventSlug)
+    .eq('published', true)
+    .single();
+  if (error || !data) return null;
+  // tiers stored as array: [{ id, label, price, capacity }]
+  const map = {};
+  for (const t of data.tiers || []) {
+    map[t.id] = { label: t.label, price: t.price, capacity: t.capacity };
+  }
+  return { tiers: map, eventName: data.name };
+}
 
-// GET /availability — public endpoint for tier capacity info
+// ─────────────────────────────────────────────
+//  GET /availability
+// ─────────────────────────────────────────────
 app.get('/availability', async (req, res) => {
+  const { event } = req.query;
+  let tiers;
+
+  if (event) {
+    const eventData = await getEventTiers(event);
+    if (!eventData) return res.status(404).json({ error: 'Evento no encontrado.' });
+    tiers = eventData.tiers;
+  } else {
+    // Legacy fallback for caballeros-aniversario
+    tiers = {
+      early:   { label: 'Early Bird',  price: 65000,  capacity: 150 },
+      general: { label: 'General',     price: 95000,  capacity: 500 },
+      vip:     { label: 'VIP',         price: 180000, capacity: 50  }
+    };
+  }
+
   const result = {};
-  for (const [key, tier] of Object.entries(TIERS)) {
+  for (const [key, tier] of Object.entries(tiers)) {
     const { count } = await supabase
       .from('registrations')
       .select('*', { count: 'exact', head: true })
       .eq('payment_status', 'paid')
-      .like('student_name', `%${tier.label}%`);
+      .like('student_name', `%${tier.label}%`)
+      .eq('event_slug', event || 'caballeros-aniversario');
     const sold = count || 0;
-    result[key] = { capacity: tier.capacity, sold, available: Math.max(0, tier.capacity - sold) };
+    result[key] = { label: tier.label, capacity: tier.capacity, sold, available: Math.max(0, tier.capacity - sold) };
   }
   res.set('Cache-Control', 'no-store');
   return res.status(200).json(result);
 });
 
-// POST /create-checkout — creates Stripe checkout session
+// ─────────────────────────────────────────────
+//  POST /create-checkout
+// ─────────────────────────────────────────────
 app.post('/create-checkout', async (req, res) => {
-  const { name, email, phone, tier, quantity } = req.body;
+  const { name, email, phone, tier, quantity, event: eventSlug } = req.body;
 
   if (!name || !email || !tier) {
     return res.status(400).json({ error: 'Todos los campos son requeridos.' });
   }
 
-  const tierData = TIERS[tier];
+  let tiers, eventName;
+
+  if (eventSlug) {
+    const eventData = await getEventTiers(eventSlug);
+    if (!eventData) return res.status(404).json({ error: 'Evento no encontrado.' });
+    tiers = eventData.tiers;
+    eventName = eventData.eventName;
+  } else {
+    // Legacy fallback
+    tiers = {
+      early:   { label: 'Early Bird',  price: 65000,  capacity: 150 },
+      general: { label: 'General',     price: 95000,  capacity: 500 },
+      vip:     { label: 'VIP',         price: 180000, capacity: 50  }
+    };
+    eventName = 'Aniversario Caballeros';
+  }
+
+  const tierData = tiers[tier];
   if (!tierData) {
     return res.status(400).json({ error: 'Tipo de acceso no válido.' });
   }
@@ -67,7 +118,8 @@ app.post('/create-checkout', async (req, res) => {
       .from('registrations')
       .select('*', { count: 'exact', head: true })
       .eq('payment_status', 'paid')
-      .like('student_name', `%${tierData.label}%`);
+      .like('student_name', `%${tierData.label}%`)
+      .eq('event_slug', eventSlug || 'caballeros-aniversario');
 
     const available = tierData.capacity - (sold || 0);
     if (available < qty) {
@@ -80,7 +132,7 @@ app.post('/create-checkout', async (req, res) => {
 
     // Generate one UUID per ticket upfront for deduplication
     const registrationIds = Array.from({ length: qty }, () => uuidv4()).join(',');
-    const tierLabel = `Aniversario Caballeros — ${tierData.label}`;
+    const tierLabel = `${eventName} — ${tierData.label}`;
     const chargedAmount = Math.round(tierData.price * 1.06);
 
     const session = await stripe.checkout.sessions.create({
@@ -92,7 +144,7 @@ app.post('/create-checkout', async (req, res) => {
           currency: 'mxn',
           unit_amount: chargedAmount,
           product_data: {
-            name: `Aniversario Caballeros — ${tierData.label}`,
+            name: `${eventName} — ${tierData.label}`,
             description: `Acceso ${tierData.label} · incluye cargo por servicio Colectivo`
           }
         },
@@ -104,7 +156,8 @@ app.post('/create-checkout', async (req, res) => {
         email,
         phone: phone || '',
         tier,
-        quantity: String(qty)
+        quantity: String(qty),
+        event_slug: eventSlug || 'caballeros-aniversario'
       },
       success_url: `${BASE_URL}/success.html?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${BASE_URL}/`
@@ -118,7 +171,9 @@ app.post('/create-checkout', async (req, res) => {
   }
 });
 
-// POST /confirm-payment — called after Stripe redirect, verifies + sends QR email
+// ─────────────────────────────────────────────
+//  POST /confirm-payment
+// ─────────────────────────────────────────────
 app.post('/confirm-payment', async (req, res) => {
   const { session_id } = req.body;
   if (!session_id) return res.status(400).json({ error: 'Session ID requerido.' });
@@ -130,7 +185,7 @@ app.post('/confirm-payment', async (req, res) => {
       return res.status(400).json({ error: 'Pago no completado.' });
     }
 
-    const { registrationIds, name, student_name, email, phone, quantity } = session.metadata;
+    const { registrationIds, name, student_name, email, phone, quantity, event_slug } = session.metadata;
     const ids = registrationIds.split(',');
     const qty = parseInt(quantity) || 1;
 
@@ -172,7 +227,8 @@ app.post('/confirm-payment', async (req, res) => {
       insertRows.push({
         id: ticketId, name, student_name,
         email, phone: phone || null,
-        payment_status: 'paid'
+        payment_status: 'paid',
+        event_slug: event_slug || 'caballeros-aniversario'
       });
     }
 
@@ -184,11 +240,13 @@ app.post('/confirm-payment', async (req, res) => {
       return res.status(500).json({ error: 'Error al guardar el registro.' });
     }
 
-    // Send confirmation email — inline QRs + PNG attachments as fallback
+    // Get event display name for email subject
+    const eventDisplay = student_name.split(' — ')[0] || 'Colectivo';
+
     await resend.emails.send({
       from: process.env.RESEND_FROM_EMAIL,
       to: email,
-      subject: `🎟️ ${qty > 1 ? `Tus ${qty} accesos` : 'Tu acceso'} — Aniversario Caballeros`,
+      subject: `🎟️ ${qty > 1 ? `Tus ${qty} accesos` : 'Tu acceso'} — ${eventDisplay}`,
       html: buildEmailHTML({ name, student_name, qrCodes }),
       attachments
     });
@@ -201,7 +259,9 @@ app.post('/confirm-payment', async (req, res) => {
   }
 });
 
-// POST /admin/resend-email — resend QR email for a given email address
+// ─────────────────────────────────────────────
+//  POST /admin/resend-email
+// ─────────────────────────────────────────────
 app.post('/admin/resend-email', async (req, res) => {
   const { email, password } = req.body;
 
@@ -225,7 +285,6 @@ app.post('/admin/resend-email', async (req, res) => {
     const { name, student_name } = registrations[0];
     const qty = registrations.length;
 
-    // Regenerate QR for every ticket ID
     const qrCodes = [];
     const attachments = [];
 
@@ -253,7 +312,7 @@ app.post('/admin/resend-email', async (req, res) => {
     await resend.emails.send({
       from: process.env.RESEND_FROM_EMAIL,
       to: email,
-      subject: `🔁 Reenvío de accesos — Aniversario Caballeros`,
+      subject: `🔁 Reenvío de accesos — ${student_name.split(' — ')[0] || 'Colectivo'}`,
       html: buildEmailHTML({ name, student_name, qrCodes }),
       attachments
     });
@@ -266,9 +325,12 @@ app.post('/admin/resend-email', async (req, res) => {
   }
 });
 
-// Email HTML template
+// ─────────────────────────────────────────────
+//  EMAIL HTML TEMPLATE
+// ─────────────────────────────────────────────
 function buildEmailHTML({ name, student_name, qrCodes }) {
   const qty = qrCodes.length;
+  const eventDisplay = student_name.split(' — ')[0] || 'Colectivo';
   const qrBlocks = qrCodes.map((qr, i) => `
     <div class="qr-section">
       <div class="qr-label">${qty > 1 ? `// Boleto ${i + 1} de ${qty}` : '// Tu código de acceso'}</div>
@@ -309,8 +371,8 @@ function buildEmailHTML({ name, student_name, qrCodes }) {
 <body>
   <div class="container">
     <div class="header">
-      <div class="header-tag">// Caballeros presenta</div>
-      <h1>ANIVERSARIO</h1>
+      <div class="header-tag">// Colectivo presenta</div>
+      <h1>${eventDisplay.toUpperCase()}</h1>
       <p>${qty > 1 ? `${qty} accesos confirmados` : 'Tu acceso está confirmado'}</p>
     </div>
     <div class="body">
@@ -327,7 +389,7 @@ function buildEmailHTML({ name, student_name, qrCodes }) {
       ${qrBlocks}
     </div>
     <div class="footer">
-      <p>COLECTIVO.LIVE · CABALLEROS</p>
+      <p>COLECTIVO.LIVE</p>
     </div>
   </div>
 </body>
@@ -335,24 +397,31 @@ function buildEmailHTML({ name, student_name, qrCodes }) {
   `;
 }
 
-// GET /admin/registrations — returns all registrations (password protected)
+// ─────────────────────────────────────────────
+//  GET /admin/registrations
+// ─────────────────────────────────────────────
 app.get('/admin/registrations', async (req, res) => {
-  const { password } = req.query;
+  const { password, event } = req.query;
   if (password !== process.env.ADMIN_PASSWORD) {
     return res.status(401).json({ error: 'No autorizado.' });
   }
 
-  const { data, error } = await supabase
+  let query = supabase
     .from('registrations')
     .select('*')
     .order('created_at', { ascending: false });
 
+  if (event) query = query.eq('event_slug', event);
+
+  const { data, error } = await query;
   if (error) return res.status(500).json({ error: 'Error al obtener registros.' });
   res.set('Cache-Control', 'no-store');
   return res.status(200).json(data);
 });
 
-// POST /verify — scans QR, verifies registration, marks checked_in
+// ─────────────────────────────────────────────
+//  POST /verify
+// ─────────────────────────────────────────────
 app.post('/verify', async (req, res) => {
   const { id, password } = req.body;
 
@@ -362,7 +431,6 @@ app.post('/verify', async (req, res) => {
 
   if (!id) return res.status(400).json({ error: 'ID requerido.' });
 
-  // Look up registration
   const { data, error } = await supabase
     .from('registrations')
     .select('*')
@@ -381,7 +449,6 @@ app.post('/verify', async (req, res) => {
     });
   }
 
-  // Mark as checked in
   await supabase
     .from('registrations')
     .update({ checked_in: true, checked_in_at: new Date().toISOString() })
@@ -394,6 +461,134 @@ app.post('/verify', async (req, res) => {
   });
 });
 
+// ─────────────────────────────────────────────
+//  EVENT CRUD — PUBLIC
+// ─────────────────────────────────────────────
+
+// GET /events/:slug — public event page data
+app.get('/events/:slug', async (req, res) => {
+  const { slug } = req.params;
+  const { data, error } = await supabase
+    .from('events')
+    .select('*')
+    .eq('slug', slug)
+    .eq('published', true)
+    .single();
+
+  if (error || !data) return res.status(404).json({ error: 'Evento no encontrado.' });
+  res.set('Cache-Control', 'no-store');
+  return res.status(200).json(data);
+});
+
+// ─────────────────────────────────────────────
+//  EVENT CRUD — ADMIN
+// ─────────────────────────────────────────────
+
+// GET /admin/events — list all events
+app.get('/admin/events', async (req, res) => {
+  const { password } = req.query;
+  if (password !== process.env.ADMIN_PASSWORD) {
+    return res.status(401).json({ error: 'No autorizado.' });
+  }
+
+  const { data, error } = await supabase
+    .from('events')
+    .select('id, slug, name, date_label, published, created_at')
+    .order('created_at', { ascending: false });
+
+  if (error) return res.status(500).json({ error: 'Error al obtener eventos.' });
+  return res.status(200).json(data);
+});
+
+// GET /admin/events/:slug — get single event (includes unpublished)
+app.get('/admin/events/:slug', async (req, res) => {
+  const { password } = req.query;
+  if (password !== process.env.ADMIN_PASSWORD) {
+    return res.status(401).json({ error: 'No autorizado.' });
+  }
+
+  const { data, error } = await supabase
+    .from('events')
+    .select('*')
+    .eq('slug', req.params.slug)
+    .single();
+
+  if (error || !data) return res.status(404).json({ error: 'Evento no encontrado.' });
+  return res.status(200).json(data);
+});
+
+// POST /admin/events — create event
+app.post('/admin/events', async (req, res) => {
+  const { password, ...eventData } = req.body;
+  if (password !== process.env.ADMIN_PASSWORD) {
+    return res.status(401).json({ error: 'No autorizado.' });
+  }
+
+  if (!eventData.slug || !eventData.name) {
+    return res.status(400).json({ error: 'slug y name son requeridos.' });
+  }
+
+  // Sanitize slug
+  eventData.slug = eventData.slug.toLowerCase().replace(/[^a-z0-9-]/g, '-');
+
+  const { data, error } = await supabase
+    .from('events')
+    .insert([eventData])
+    .select()
+    .single();
+
+  if (error) {
+    if (error.code === '23505') return res.status(409).json({ error: 'Ya existe un evento con ese slug.' });
+    return res.status(500).json({ error: 'Error al crear el evento.' });
+  }
+
+  return res.status(201).json(data);
+});
+
+// PUT /admin/events/:slug — update event
+app.put('/admin/events/:slug', async (req, res) => {
+  const { password, ...eventData } = req.body;
+  if (password !== process.env.ADMIN_PASSWORD) {
+    return res.status(401).json({ error: 'No autorizado.' });
+  }
+
+  // Don't allow slug change via this endpoint
+  delete eventData.slug;
+  delete eventData.id;
+  delete eventData.created_at;
+
+  const { data, error } = await supabase
+    .from('events')
+    .update(eventData)
+    .eq('slug', req.params.slug)
+    .select()
+    .single();
+
+  if (error) return res.status(500).json({ error: 'Error al actualizar el evento.' });
+  if (!data) return res.status(404).json({ error: 'Evento no encontrado.' });
+
+  return res.status(200).json(data);
+});
+
+// DELETE /admin/events/:slug — delete event (soft: set published=false)
+app.delete('/admin/events/:slug', async (req, res) => {
+  const { password } = req.body;
+  if (password !== process.env.ADMIN_PASSWORD) {
+    return res.status(401).json({ error: 'No autorizado.' });
+  }
+
+  const { error } = await supabase
+    .from('events')
+    .update({ published: false })
+    .eq('slug', req.params.slug);
+
+  if (error) return res.status(500).json({ error: 'Error al eliminar el evento.' });
+  return res.status(200).json({ success: true });
+});
+
+// ─────────────────────────────────────────────
+//  START SERVER
+// ─────────────────────────────────────────────
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`✅ Colectivo server running on http://localhost:${PORT}`);

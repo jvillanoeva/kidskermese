@@ -1,0 +1,1099 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Crear Evento — Colectivo</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Google+Sans+Flex&family=Space+Mono:wght@400;700&display=swap');
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --black: #080808;
+      --surface: #111;
+      --surface2: #1a1a1a;
+      --border: #222;
+      --border2: #2a2a2a;
+      --white: #f5f0e8;
+      --muted: #888;
+      --accent: #FF3B1F;
+      --yellow: #F5E642;
+      --green: #27ae60;
+    }
+
+    body {
+      font-family: 'Google Sans Flex', sans-serif;
+      background: var(--black);
+      color: var(--white);
+      min-height: 100vh;
+    }
+
+    /* ── NAV ── */
+    nav {
+      padding: 20px 40px;
+      display: flex; justify-content: space-between; align-items: center;
+      border-bottom: 1px solid var(--border);
+      position: sticky; top: 0; background: var(--black); z-index: 50;
+    }
+    .nav-logo {
+      font-family: 'Space Mono', monospace;
+      font-weight: 700; font-size: 14px; letter-spacing: 4px;
+      color: var(--white); text-decoration: none; opacity: 0.5;
+    }
+    .nav-right { display: flex; align-items: center; gap: 20px; }
+    .nav-event {
+      font-family: 'Space Mono', monospace;
+      font-size: 11px; letter-spacing: 3px; color: #444;
+      text-transform: uppercase;
+    }
+    .nav-back {
+      font-family: 'Space Mono', monospace;
+      font-size: 10px; letter-spacing: 2px; color: #555;
+      text-transform: uppercase; text-decoration: none;
+      transition: color 0.15s;
+    }
+    .nav-back:hover { color: var(--white); }
+
+    /* ── LOGIN ── */
+    #login-screen {
+      display: flex; align-items: center; justify-content: center;
+      min-height: calc(100vh - 65px); padding: 60px 24px;
+      background-image:
+        repeating-linear-gradient(0deg, transparent, transparent 39px, #111 39px, #111 40px),
+        repeating-linear-gradient(90deg, transparent, transparent 39px, #111 39px, #111 40px);
+    }
+    .login-card {
+      background: var(--surface); border: 1px solid var(--border);
+      padding: 48px 40px; max-width: 380px; width: 100%; text-align: center;
+    }
+    .login-tag {
+      font-family: 'Space Mono', monospace;
+      font-size: 10px; letter-spacing: 4px; color: var(--accent);
+      text-transform: uppercase; margin-bottom: 16px;
+    }
+    .login-card h1 {
+      font-size: 40px; font-weight: 800; letter-spacing: -2px;
+      color: var(--white); margin-bottom: 4px;
+    }
+    .login-card h1 span { color: var(--accent); }
+    .login-card .sub {
+      font-family: 'Space Mono', monospace;
+      font-size: 11px; letter-spacing: 2px; color: #444;
+      text-transform: uppercase; margin-bottom: 36px;
+    }
+    .login-card input {
+      width: 100%; padding: 14px 16px;
+      background: var(--surface2); border: 1px solid var(--border);
+      font-size: 14px; color: var(--white); outline: none;
+      font-family: 'Google Sans Flex', sans-serif; margin-bottom: 12px;
+      transition: border-color 0.15s;
+    }
+    .login-card input:focus { border-color: var(--accent); }
+    .login-card input::placeholder { color: #444; }
+    .login-error {
+      font-family: 'Space Mono', monospace; font-size: 11px; color: var(--accent);
+      letter-spacing: 2px; margin-top: 12px; display: none;
+    }
+
+    /* ── MAIN EDITOR ── */
+    #editor-screen { display: none; }
+
+    .editor-header {
+      padding: 32px 40px 24px;
+      border-bottom: 1px solid var(--border);
+      display: flex; justify-content: space-between; align-items: flex-end;
+    }
+    .editor-header-left {}
+    .editor-mode-tag {
+      font-family: 'Space Mono', monospace; font-size: 10px; letter-spacing: 4px;
+      color: var(--accent); text-transform: uppercase; margin-bottom: 8px;
+    }
+    .editor-header h1 {
+      font-size: 32px; font-weight: 800; letter-spacing: -1.5px; color: var(--white);
+    }
+    .editor-header-actions { display: flex; gap: 12px; align-items: center; }
+
+    /* ── EVENTS LIST ── */
+    #events-list-view {}
+    .events-list-header {
+      padding: 32px 40px 20px;
+      display: flex; justify-content: space-between; align-items: center;
+    }
+    .events-list-header h2 {
+      font-size: 24px; font-weight: 800; letter-spacing: -1px;
+    }
+
+    .events-grid {
+      display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 16px; padding: 0 40px 40px;
+    }
+    .event-card {
+      background: var(--surface); border: 1px solid var(--border);
+      padding: 24px; cursor: pointer; transition: border-color 0.15s;
+    }
+    .event-card:hover { border-color: #444; }
+    .event-card-tag {
+      font-family: 'Space Mono', monospace; font-size: 10px; letter-spacing: 3px;
+      color: #555; text-transform: uppercase; margin-bottom: 10px;
+      display: flex; align-items: center; gap: 8px;
+    }
+    .badge-published {
+      background: var(--green); color: #000; padding: 2px 8px;
+      font-size: 9px; letter-spacing: 2px; font-weight: 700;
+    }
+    .badge-draft {
+      background: #333; color: #666; padding: 2px 8px;
+      font-size: 9px; letter-spacing: 2px;
+    }
+    .event-card h3 { font-size: 20px; font-weight: 800; letter-spacing: -0.5px; margin-bottom: 6px; }
+    .event-card .event-slug {
+      font-family: 'Space Mono', monospace; font-size: 10px; color: #555;
+    }
+    .event-card-actions { margin-top: 20px; display: flex; gap: 10px; }
+
+    /* ── LAYOUT ── */
+    .editor-body {
+      display: grid; grid-template-columns: 220px 1fr;
+      min-height: calc(100vh - 200px);
+    }
+
+    /* ── SIDEBAR NAV ── */
+    .sidebar {
+      border-right: 1px solid var(--border);
+      padding: 24px 0;
+      position: sticky; top: 65px; height: calc(100vh - 65px);
+      overflow-y: auto;
+    }
+    .sidebar-section {
+      padding: 0 20px 8px;
+      font-family: 'Space Mono', monospace; font-size: 9px;
+      letter-spacing: 3px; color: #444; text-transform: uppercase;
+      margin-top: 20px;
+    }
+    .sidebar-link {
+      display: flex; align-items: center; gap: 10px;
+      padding: 10px 20px; font-size: 13px; color: #777;
+      cursor: pointer; transition: all 0.15s; border-left: 2px solid transparent;
+    }
+    .sidebar-link:hover { color: var(--white); background: var(--surface); }
+    .sidebar-link.active { color: var(--white); border-left-color: var(--accent); background: var(--surface); }
+    .sidebar-link .icon { font-size: 14px; opacity: 0.7; }
+
+    /* ── FORM PANELS ── */
+    .form-panels { padding: 32px 40px; }
+    .panel { display: none; }
+    .panel.active { display: block; }
+
+    .panel-title {
+      font-family: 'Space Mono', monospace; font-size: 10px; letter-spacing: 4px;
+      color: var(--accent); text-transform: uppercase; margin-bottom: 8px;
+    }
+    .panel h2 {
+      font-size: 24px; font-weight: 800; letter-spacing: -1px;
+      margin-bottom: 4px;
+    }
+    .panel .panel-desc {
+      font-size: 13px; color: var(--muted); margin-bottom: 32px;
+    }
+
+    /* ── FORM ELEMENTS ── */
+    .form-row { margin-bottom: 20px; }
+    .form-row label {
+      display: block; font-family: 'Space Mono', monospace;
+      font-size: 10px; letter-spacing: 3px; color: #666;
+      text-transform: uppercase; margin-bottom: 8px;
+    }
+    .form-row label span { color: var(--accent); } /* required marker */
+
+    .form-input {
+      width: 100%; padding: 13px 16px;
+      background: var(--surface2); border: 1px solid var(--border);
+      font-size: 14px; color: var(--white); outline: none;
+      font-family: 'Google Sans Flex', sans-serif;
+      transition: border-color 0.15s;
+    }
+    .form-input:focus { border-color: var(--accent); }
+    .form-input::placeholder { color: #444; }
+
+    textarea.form-input { resize: vertical; min-height: 100px; line-height: 1.6; }
+
+    .form-hint {
+      font-family: 'Space Mono', monospace; font-size: 10px;
+      color: #444; letter-spacing: 1px; margin-top: 6px;
+    }
+
+    .form-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    .form-grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; }
+
+    /* ── TIER BUILDER ── */
+    .tier-list { margin-bottom: 16px; }
+    .tier-item {
+      background: var(--surface2); border: 1px solid var(--border);
+      padding: 20px; margin-bottom: 12px;
+      display: grid; grid-template-columns: 1fr 1fr 1fr 40px; gap: 12px; align-items: end;
+    }
+    .tier-item label {
+      font-family: 'Space Mono', monospace; font-size: 9px;
+      letter-spacing: 3px; color: #555; text-transform: uppercase;
+      display: block; margin-bottom: 8px;
+    }
+    .tier-item input {
+      width: 100%; padding: 10px 12px;
+      background: var(--surface); border: 1px solid var(--border2);
+      font-size: 13px; color: var(--white); outline: none;
+      font-family: 'Google Sans Flex', sans-serif;
+      transition: border-color 0.15s;
+    }
+    .tier-item input:focus { border-color: var(--accent); }
+    .tier-item input::placeholder { color: #444; }
+    .tier-remove {
+      width: 40px; height: 40px;
+      background: none; border: 1px solid #2a2a2a; color: #555;
+      cursor: pointer; font-size: 16px; display: flex;
+      align-items: center; justify-content: center; transition: all 0.15s;
+    }
+    .tier-remove:hover { border-color: var(--accent); color: var(--accent); }
+
+    /* ── SPONSOR BUILDER ── */
+    .sponsor-list { margin-bottom: 16px; }
+    .sponsor-item {
+      background: var(--surface2); border: 1px solid var(--border);
+      padding: 16px; margin-bottom: 10px;
+      display: grid; grid-template-columns: 1fr 1fr 40px; gap: 12px; align-items: end;
+    }
+    .sponsor-item label {
+      font-family: 'Space Mono', monospace; font-size: 9px;
+      letter-spacing: 3px; color: #555; text-transform: uppercase;
+      display: block; margin-bottom: 8px;
+    }
+    .sponsor-item input {
+      width: 100%; padding: 10px 12px;
+      background: var(--surface); border: 1px solid var(--border2);
+      font-size: 13px; color: var(--white); outline: none;
+      font-family: 'Google Sans Flex', sans-serif;
+      transition: border-color 0.15s;
+    }
+    .sponsor-item input:focus { border-color: var(--accent); }
+    .sponsor-item input::placeholder { color: #444; }
+
+    /* ── BUTTONS ── */
+    .btn {
+      padding: 12px 24px; font-size: 12px; font-weight: 700;
+      letter-spacing: 2px; text-transform: uppercase; cursor: pointer;
+      border: none; font-family: 'Google Sans Flex', sans-serif;
+      transition: opacity 0.2s; display: inline-flex; align-items: center; gap: 8px;
+    }
+    .btn:hover { opacity: 0.85; }
+    .btn-primary { background: var(--accent); color: white; }
+    .btn-yellow { background: var(--yellow); color: #000; }
+    .btn-ghost { background: none; border: 1px solid var(--border2); color: var(--muted); }
+    .btn-ghost:hover { border-color: #555; color: var(--white); opacity: 1; }
+    .btn-green { background: var(--green); color: white; }
+    .btn-sm { padding: 9px 16px; font-size: 11px; }
+    .btn-add {
+      width: 100%; padding: 13px;
+      background: none; border: 1px dashed #2a2a2a; color: #555;
+      font-size: 11px; font-weight: 700; letter-spacing: 2px;
+      text-transform: uppercase; cursor: pointer; transition: all 0.15s;
+      font-family: 'Space Mono', monospace;
+    }
+    .btn-add:hover { border-color: var(--accent); color: var(--accent); }
+
+    /* ── SLUG PREVIEW ── */
+    .slug-preview {
+      font-family: 'Space Mono', monospace; font-size: 11px;
+      color: #555; margin-top: 8px; padding: 10px 14px;
+      background: var(--surface2); border: 1px solid var(--border2);
+    }
+    .slug-preview span { color: var(--yellow); }
+
+    /* ── IMAGE PREVIEW ── */
+    .img-preview {
+      margin-top: 12px; max-width: 100%; max-height: 200px;
+      border: 1px solid var(--border); display: none;
+      object-fit: cover;
+    }
+
+    /* ── TOAST ── */
+    .toast {
+      position: fixed; bottom: 32px; right: 32px; z-index: 999;
+      padding: 14px 24px; font-size: 13px; font-weight: 700;
+      letter-spacing: 1px; display: none; align-items: center; gap: 10px;
+      font-family: 'Space Mono', monospace;
+    }
+    .toast.success { background: var(--green); color: white; display: flex; }
+    .toast.error   { background: var(--accent); color: white; display: flex; }
+
+    /* ── PUBLISH PANEL ── */
+    .publish-box {
+      background: var(--surface2); border: 1px solid var(--border);
+      border-left: 3px solid var(--yellow); padding: 24px 28px; margin-bottom: 24px;
+    }
+    .publish-box h3 { font-size: 16px; font-weight: 700; margin-bottom: 6px; }
+    .publish-box p { font-size: 13px; color: var(--muted); line-height: 1.6; }
+    .publish-actions { display: flex; gap: 12px; margin-top: 20px; flex-wrap: wrap; }
+
+    .event-url {
+      font-family: 'Space Mono', monospace; font-size: 12px;
+      color: var(--yellow); background: var(--surface);
+      border: 1px solid var(--border2); padding: 12px 16px;
+      word-break: break-all; margin-top: 16px;
+    }
+
+    /* ── SECTION DIVIDER ── */
+    .section-divider {
+      border: none; border-top: 1px solid var(--border);
+      margin: 32px 0;
+    }
+
+    @media (max-width: 768px) {
+      nav { padding: 16px 20px; }
+      .editor-body { grid-template-columns: 1fr; }
+      .sidebar {
+        position: static; height: auto;
+        display: flex; overflow-x: auto; padding: 12px 0;
+        border-right: none; border-bottom: 1px solid var(--border);
+      }
+      .sidebar-section { display: none; }
+      .sidebar-link { white-space: nowrap; border-left: none; border-bottom: 2px solid transparent; }
+      .sidebar-link.active { border-left: none; border-bottom-color: var(--accent); }
+      .form-panels { padding: 24px 20px; }
+      .form-grid-2, .form-grid-3 { grid-template-columns: 1fr; }
+      .tier-item { grid-template-columns: 1fr 1fr; }
+      .tier-item .tier-remove { grid-column: span 2; width: 100%; }
+      .events-grid { padding: 0 20px 40px; grid-template-columns: 1fr; }
+      .events-list-header { padding: 24px 20px 16px; }
+      .editor-header { padding: 24px 20px 20px; flex-direction: column; gap: 16px; align-items: flex-start; }
+    }
+  </style>
+</head>
+<body>
+
+  <nav>
+    <a class="nav-logo" href="/">COLECTIVO</a>
+    <div class="nav-right">
+      <span class="nav-event" id="nav-mode-label">// Gestor de eventos</span>
+      <a class="nav-back" href="/admin.html">← Admin</a>
+    </div>
+  </nav>
+
+  <!-- LOGIN -->
+  <div id="login-screen">
+    <div class="login-card">
+      <div class="login-tag">// Acceso restringido</div>
+      <h1>CREAR<br/><span>EVENTO</span></h1>
+      <p class="sub">Solo promotores autorizados</p>
+      <input type="password" id="pw" placeholder="Contraseña" />
+      <button class="btn btn-primary" style="width:100%;padding:14px;" onclick="doLogin()">Entrar →</button>
+      <p class="login-error" id="login-error">Contraseña incorrecta</p>
+    </div>
+  </div>
+
+  <!-- EDITOR -->
+  <div id="editor-screen">
+
+    <!-- Events list view -->
+    <div id="events-list-view">
+      <div class="events-list-header">
+        <div>
+          <div class="panel-title">// Tus eventos</div>
+          <h2>EVENTOS</h2>
+        </div>
+        <button class="btn btn-primary" onclick="showNewForm()">+ Nuevo evento</button>
+      </div>
+      <div class="events-grid" id="events-grid">
+        <div style="color:#555;font-family:'Space Mono',monospace;font-size:12px;padding:20px 0;">
+          Cargando eventos...
+        </div>
+      </div>
+    </div>
+
+    <!-- Form view -->
+    <div id="form-view" style="display:none;">
+      <div class="editor-header">
+        <div class="editor-header-left">
+          <div class="editor-mode-tag" id="form-mode-tag">// Nuevo evento</div>
+          <h1 id="form-title">CREAR EVENTO</h1>
+        </div>
+        <div class="editor-header-actions">
+          <button class="btn btn-ghost btn-sm" onclick="showEventsList()">← Volver</button>
+          <button class="btn btn-ghost btn-sm" onclick="saveEvent(false)" id="btn-save-draft">Guardar borrador</button>
+          <button class="btn btn-yellow btn-sm" onclick="saveEvent(true)" id="btn-publish">Publicar evento →</button>
+        </div>
+      </div>
+
+      <div class="editor-body">
+        <!-- Sidebar -->
+        <div class="sidebar">
+          <div class="sidebar-section">Básico</div>
+          <div class="sidebar-link active" onclick="switchPanel('panel-info')">
+            <span class="icon">📋</span> Información
+          </div>
+          <div class="sidebar-link" onclick="switchPanel('panel-media')">
+            <span class="icon">🖼️</span> Banner & Layout
+          </div>
+          <div class="sidebar-section">Contenido</div>
+          <div class="sidebar-link" onclick="switchPanel('panel-description')">
+            <span class="icon">📝</span> Descripción
+          </div>
+          <div class="sidebar-link" onclick="switchPanel('panel-rules')">
+            <span class="icon">📏</span> Reglas
+          </div>
+          <div class="sidebar-link" onclick="switchPanel('panel-sponsors')">
+            <span class="icon">🤝</span> Patrocinadores
+          </div>
+          <div class="sidebar-section">Venue</div>
+          <div class="sidebar-link" onclick="switchPanel('panel-location')">
+            <span class="icon">📍</span> Ubicación
+          </div>
+          <div class="sidebar-section">Tickets</div>
+          <div class="sidebar-link" onclick="switchPanel('panel-tiers')">
+            <span class="icon">🎟️</span> Tiers de acceso
+          </div>
+          <div class="sidebar-section">Contacto</div>
+          <div class="sidebar-link" onclick="switchPanel('panel-contact')">
+            <span class="icon">📞</span> Promotor
+          </div>
+          <div class="sidebar-section">Publicar</div>
+          <div class="sidebar-link" onclick="switchPanel('panel-publish')">
+            <span class="icon">🚀</span> Publicar
+          </div>
+        </div>
+
+        <!-- Form panels -->
+        <div class="form-panels">
+
+          <!-- ── PANEL: INFO ── -->
+          <div class="panel active" id="panel-info">
+            <div class="panel-title">// Paso 1</div>
+            <h2>INFORMACIÓN BÁSICA</h2>
+            <p class="panel-desc">Nombre, fecha, venue y detalles principales del evento.</p>
+
+            <div class="form-row">
+              <label>Nombre del evento <span>*</span></label>
+              <input type="text" class="form-input" id="f-name" placeholder="Ej: Aniversario Caballeros" oninput="autoSlug()" />
+            </div>
+
+            <div class="form-row">
+              <label>Slug (URL) <span>*</span></label>
+              <input type="text" class="form-input" id="f-slug" placeholder="caballeros-aniversario" oninput="updateSlugPreview()" />
+              <div class="slug-preview">colectivo.live/e/<span id="slug-preview-val">—</span></div>
+            </div>
+
+            <div class="form-row">
+              <label>Subtítulo / tagline</label>
+              <input type="text" class="form-input" id="f-subtitle" placeholder="Ej: La noche más esperada del año" />
+            </div>
+
+            <div class="form-row">
+              <label>Nombre del promotor</label>
+              <input type="text" class="form-input" id="f-promoter-name" placeholder="Ej: Caballeros" />
+            </div>
+
+            <hr class="section-divider"/>
+
+            <div class="form-grid-2">
+              <div class="form-row">
+                <label>Fecha</label>
+                <input type="text" class="form-input" id="f-date-label" placeholder="Sábado 12 de Abril, 2025" />
+              </div>
+              <div class="form-row">
+                <label>Hora</label>
+                <input type="text" class="form-input" id="f-time-label" placeholder="22:00 hrs" />
+              </div>
+            </div>
+
+            <div class="form-row">
+              <label>Venue / Lugar</label>
+              <input type="text" class="form-input" id="f-venue" placeholder="Ej: Foro Indie Rocks!" />
+            </div>
+
+            <div class="form-row">
+              <label>Ciudad</label>
+              <input type="text" class="form-input" id="f-city" placeholder="Ciudad de México" />
+            </div>
+
+            <button class="btn btn-primary" onclick="switchPanel('panel-media')">Siguiente: Banner & Layout →</button>
+          </div>
+
+          <!-- ── PANEL: MEDIA ── -->
+          <div class="panel" id="panel-media">
+            <div class="panel-title">// Paso 2</div>
+            <h2>BANNER & LAYOUT</h2>
+            <p class="panel-desc">Imágenes que aparecerán en la página del evento. Usa URLs de imágenes públicas (Cloudinary, Supabase Storage, etc.).</p>
+
+            <div class="form-row">
+              <label>URL del banner principal</label>
+              <input type="url" class="form-input" id="f-banner-url" placeholder="https://..." oninput="previewImg('f-banner-url', 'banner-preview')" />
+              <div class="form-hint">Recomendado: 1600×800px, JPG o PNG</div>
+              <img id="banner-preview" class="img-preview" alt="Banner preview" />
+            </div>
+
+            <hr class="section-divider"/>
+
+            <div class="form-row">
+              <label>URL del mapa del recinto (layout)</label>
+              <input type="url" class="form-input" id="f-layout-url" placeholder="https://..." oninput="previewImg('f-layout-url', 'layout-preview')" />
+              <div class="form-hint">Plano del venue, mapa de accesos, zona VIP, etc.</div>
+              <img id="layout-preview" class="img-preview" alt="Layout preview" />
+            </div>
+
+            <hr class="section-divider"/>
+
+            <div style="display:flex;gap:12px;">
+              <button class="btn btn-ghost" onclick="switchPanel('panel-info')">← Atrás</button>
+              <button class="btn btn-primary" onclick="switchPanel('panel-description')">Siguiente: Descripción →</button>
+            </div>
+          </div>
+
+          <!-- ── PANEL: DESCRIPTION ── -->
+          <div class="panel" id="panel-description">
+            <div class="panel-title">// Paso 3</div>
+            <h2>DESCRIPCIÓN</h2>
+            <p class="panel-desc">Cuéntale a los asistentes de qué trata el evento. Puedes usar texto simple.</p>
+
+            <div class="form-row">
+              <label>Descripción del evento</label>
+              <textarea class="form-input" id="f-description" rows="8"
+                placeholder="Describe el evento, los artistas, la experiencia que vivirán los asistentes..."></textarea>
+            </div>
+
+            <hr class="section-divider"/>
+
+            <div style="display:flex;gap:12px;">
+              <button class="btn btn-ghost" onclick="switchPanel('panel-media')">← Atrás</button>
+              <button class="btn btn-primary" onclick="switchPanel('panel-rules')">Siguiente: Reglas →</button>
+            </div>
+          </div>
+
+          <!-- ── PANEL: RULES ── -->
+          <div class="panel" id="panel-rules">
+            <div class="panel-title">// Paso 4</div>
+            <h2>REGLAS DEL EVENTO</h2>
+            <p class="panel-desc">Indica qué sí y qué no está permitido, y cualquier restricción importante (edad, vestimenta, etc.).</p>
+
+            <div class="form-row">
+              <label>✅ Sí se permite (Do's)</label>
+              <textarea class="form-input" id="f-dos" rows="5"
+                placeholder="Una por línea. Ej:&#10;Cámara fotográfica&#10;Ropa casual&#10;Bebidas selladas en entrada"></textarea>
+              <div class="form-hint">Escribe una regla por línea</div>
+            </div>
+
+            <div class="form-row">
+              <label>🚫 No se permite (Don'ts)</label>
+              <textarea class="form-input" id="f-donts" rows="5"
+                placeholder="Una por línea. Ej:&#10;Cámaras profesionales&#10;Grabación de video&#10;Menores de 18 años"></textarea>
+              <div class="form-hint">Escribe una regla por línea</div>
+            </div>
+
+            <div class="form-row">
+              <label>⚠️ Restricciones y advertencias</label>
+              <textarea class="form-input" id="f-restrictions" rows="4"
+                placeholder="Ej: Evento para mayores de 18 años. Se requiere ID oficial. Aforo limitado."></textarea>
+            </div>
+
+            <hr class="section-divider"/>
+
+            <div style="display:flex;gap:12px;">
+              <button class="btn btn-ghost" onclick="switchPanel('panel-description')">← Atrás</button>
+              <button class="btn btn-primary" onclick="switchPanel('panel-sponsors')">Siguiente: Patrocinadores →</button>
+            </div>
+          </div>
+
+          <!-- ── PANEL: SPONSORS ── -->
+          <div class="panel" id="panel-sponsors">
+            <div class="panel-title">// Paso 5</div>
+            <h2>PATROCINADORES</h2>
+            <p class="panel-desc">Agrega los sponsors y marcas que apoyan el evento.</p>
+
+            <div class="sponsor-list" id="sponsor-list"></div>
+            <button class="btn-add" onclick="addSponsor()">+ Agregar patrocinador</button>
+
+            <hr class="section-divider"/>
+
+            <div style="display:flex;gap:12px;margin-top:24px;">
+              <button class="btn btn-ghost" onclick="switchPanel('panel-rules')">← Atrás</button>
+              <button class="btn btn-primary" onclick="switchPanel('panel-location')">Siguiente: Ubicación →</button>
+            </div>
+          </div>
+
+          <!-- ── PANEL: LOCATION ── -->
+          <div class="panel" id="panel-location">
+            <div class="panel-title">// Paso 6</div>
+            <h2>UBICACIÓN & MAPA</h2>
+            <p class="panel-desc">Embed de Google Maps o URL al mapa de la ubicación del evento.</p>
+
+            <div class="form-row">
+              <label>URL de Google Maps</label>
+              <input type="url" class="form-input" id="f-map-url"
+                placeholder="https://maps.google.com/..." />
+              <div class="form-hint">
+                En Google Maps: Compartir → Insertar un mapa → copia la URL del src del iframe
+              </div>
+            </div>
+
+            <div class="form-row">
+              <label>Dirección completa</label>
+              <input type="text" class="form-input" id="f-address"
+                placeholder="Ej: Av. Insurgentes Sur 1971, CDMX" />
+            </div>
+
+            <hr class="section-divider"/>
+
+            <div style="display:flex;gap:12px;">
+              <button class="btn btn-ghost" onclick="switchPanel('panel-sponsors')">← Atrás</button>
+              <button class="btn btn-primary" onclick="switchPanel('panel-tiers')">Siguiente: Tiers →</button>
+            </div>
+          </div>
+
+          <!-- ── PANEL: TIERS ── -->
+          <div class="panel" id="panel-tiers">
+            <div class="panel-title">// Paso 7</div>
+            <h2>TIERS DE ACCESO</h2>
+            <p class="panel-desc">
+              Define los tipos de boleto: nombre, precio (en MXN, sin centavos) y cuántos lugares hay.
+              Colectivo agrega automáticamente un 6% de cargo por servicio al precio que pongas aquí.
+            </p>
+
+            <div class="tier-list" id="tier-list"></div>
+            <button class="btn-add" onclick="addTier()">+ Agregar tier de acceso</button>
+
+            <div style="background:var(--surface2);border:1px solid var(--border2);border-left:3px solid var(--yellow);padding:14px 18px;margin-top:20px;">
+              <div style="font-family:'Space Mono',monospace;font-size:10px;letter-spacing:2px;color:var(--yellow);margin-bottom:6px;">// NOTA DE PRECIOS</div>
+              <div style="font-size:13px;color:var(--muted);line-height:1.6;">
+                Los precios que ingreses aquí son el precio <strong style="color:var(--white)">base</strong> que recibe el promotor.
+                El sistema cobra al comprador ese monto + 6% de cargo por servicio Colectivo.
+              </div>
+            </div>
+
+            <hr class="section-divider"/>
+
+            <div style="display:flex;gap:12px;">
+              <button class="btn btn-ghost" onclick="switchPanel('panel-location')">← Atrás</button>
+              <button class="btn btn-primary" onclick="switchPanel('panel-contact')">Siguiente: Contacto →</button>
+            </div>
+          </div>
+
+          <!-- ── PANEL: CONTACT ── -->
+          <div class="panel" id="panel-contact">
+            <div class="panel-title">// Paso 8</div>
+            <h2>CONTACTO DEL PROMOTOR</h2>
+            <p class="panel-desc">Información de contacto visible en la página del evento para que los asistentes puedan comunicarse.</p>
+
+            <div class="form-row">
+              <label>Email de contacto</label>
+              <input type="email" class="form-input" id="f-contact-email" placeholder="hola@tuevento.com" />
+            </div>
+
+            <div class="form-row">
+              <label>WhatsApp / Teléfono</label>
+              <input type="text" class="form-input" id="f-contact-phone" placeholder="+52 55 1234 5678" />
+            </div>
+
+            <div class="form-row">
+              <label>Instagram</label>
+              <input type="text" class="form-input" id="f-contact-instagram" placeholder="@tuevento" />
+            </div>
+
+            <hr class="section-divider"/>
+
+            <div style="display:flex;gap:12px;">
+              <button class="btn btn-ghost" onclick="switchPanel('panel-tiers')">← Atrás</button>
+              <button class="btn btn-primary" onclick="switchPanel('panel-publish')">Siguiente: Publicar →</button>
+            </div>
+          </div>
+
+          <!-- ── PANEL: PUBLISH ── -->
+          <div class="panel" id="panel-publish">
+            <div class="panel-title">// Último paso</div>
+            <h2>PUBLICAR EVENTO</h2>
+            <p class="panel-desc">Revisa que todo esté en orden y publica el evento para que los asistentes puedan comprar boletos.</p>
+
+            <div class="publish-box" id="publish-summary">
+              <h3 id="publish-event-name">—</h3>
+              <p id="publish-event-meta" style="color:var(--muted);font-size:13px;margin-top:4px;">—</p>
+              <div id="publish-tiers-summary" style="margin-top:12px;font-size:13px;color:var(--muted);"></div>
+              <div class="event-url" id="publish-event-url">colectivo.live/e/—</div>
+            </div>
+
+            <div class="publish-actions">
+              <button class="btn btn-ghost" onclick="saveEvent(false)">💾 Guardar borrador</button>
+              <button class="btn btn-yellow" onclick="saveEvent(true)">🚀 Publicar evento →</button>
+            </div>
+          </div>
+
+        </div><!-- /form-panels -->
+      </div><!-- /editor-body -->
+    </div><!-- /form-view -->
+  </div><!-- /editor-screen -->
+
+  <!-- TOAST -->
+  <div class="toast" id="toast"></div>
+
+  <script>
+    const API = 'https://api.colectivo.live';
+    let savedPassword = '';
+    let editingSlug = null; // null = new event
+
+    // ── LOGIN ──
+    document.getElementById('pw').addEventListener('keydown', e => {
+      if (e.key === 'Enter') doLogin();
+    });
+
+    async function doLogin() {
+      const pw = document.getElementById('pw').value;
+      if (!pw) return;
+      // Quick validation: try to load events list
+      const r = await fetch(`${API}/admin/events?password=${encodeURIComponent(pw)}`);
+      if (r.status === 401) {
+        document.getElementById('login-error').style.display = 'block';
+        return;
+      }
+      savedPassword = pw;
+      document.getElementById('login-screen').style.display = 'none';
+      document.getElementById('editor-screen').style.display = 'block';
+      loadEventsList();
+      // Check if URL has ?edit=slug
+      const params = new URLSearchParams(window.location.search);
+      const editSlug = params.get('edit');
+      if (editSlug) loadEventForEdit(editSlug);
+    }
+
+    // ── EVENTS LIST ──
+    async function loadEventsList() {
+      const r = await fetch(`${API}/admin/events?password=${encodeURIComponent(savedPassword)}`);
+      const data = await r.json();
+      const grid = document.getElementById('events-grid');
+      if (!data.length) {
+        grid.innerHTML = '<div style="color:#555;font-family:\'Space Mono\',monospace;font-size:12px;padding:20px 0;">Sin eventos todavía. ¡Crea el primero!</div>';
+        return;
+      }
+      grid.innerHTML = data.map(ev => `
+        <div class="event-card">
+          <div class="event-card-tag">
+            <span>${ev.date_label || 'Sin fecha'}</span>
+            ${ev.published
+              ? '<span class="badge-published">Publicado</span>'
+              : '<span class="badge-draft">Borrador</span>'}
+          </div>
+          <h3>${ev.name}</h3>
+          <div class="event-slug">/${ev.slug}</div>
+          <div class="event-card-actions">
+            <button class="btn btn-ghost btn-sm" onclick="loadEventForEdit('${ev.slug}')">✏️ Editar</button>
+            <button class="btn btn-ghost btn-sm" onclick="window.open('https://colectivo.live/e/?e=${ev.slug}', '_blank')">🔗 Ver página</button>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function showEventsList() {
+      document.getElementById('events-list-view').style.display = 'block';
+      document.getElementById('form-view').style.display = 'none';
+      editingSlug = null;
+      loadEventsList();
+    }
+
+    function showNewForm() {
+      editingSlug = null;
+      clearForm();
+      addTier(); // default: 1 tier
+      document.getElementById('events-list-view').style.display = 'none';
+      document.getElementById('form-view').style.display = 'block';
+      document.getElementById('form-mode-tag').textContent = '// Nuevo evento';
+      document.getElementById('form-title').textContent = 'CREAR EVENTO';
+      switchPanel('panel-info');
+    }
+
+    // ── EDIT EVENT ──
+    async function loadEventForEdit(slug) {
+      const r = await fetch(`${API}/admin/events/${slug}?password=${encodeURIComponent(savedPassword)}`);
+      const ev = await r.json();
+      editingSlug = slug;
+      clearForm();
+      populateForm(ev);
+      document.getElementById('events-list-view').style.display = 'none';
+      document.getElementById('form-view').style.display = 'block';
+      document.getElementById('form-mode-tag').textContent = '// Editando evento';
+      document.getElementById('form-title').textContent = 'EDITAR EVENTO';
+      switchPanel('panel-info');
+    }
+
+    function populateForm(ev) {
+      set('f-name', ev.name || '');
+      set('f-slug', ev.slug || ''); updateSlugPreview();
+      set('f-subtitle', ev.subtitle || '');
+      set('f-promoter-name', ev.promoter_name || '');
+      set('f-date-label', ev.date_label || '');
+      set('f-time-label', ev.time_label || '');
+      set('f-venue', ev.venue || '');
+      set('f-city', ev.city || '');
+      set('f-banner-url', ev.banner_url || '');
+      set('f-layout-url', ev.layout_url || '');
+      set('f-description', ev.description || '');
+      set('f-dos', ev.dos || '');
+      set('f-donts', ev.donts || '');
+      set('f-restrictions', ev.restrictions || '');
+      set('f-map-url', ev.map_url || '');
+      set('f-address', ev.address || '');
+      set('f-contact-email', ev.contact_email || '');
+      set('f-contact-phone', ev.contact_phone || '');
+      set('f-contact-instagram', ev.contact_instagram || '');
+
+      if (ev.banner_url) previewImg('f-banner-url', 'banner-preview');
+      if (ev.layout_url) previewImg('f-layout-url', 'layout-preview');
+
+      // Tiers
+      document.getElementById('tier-list').innerHTML = '';
+      (ev.tiers || []).forEach(t => addTier(t));
+
+      // Sponsors
+      document.getElementById('sponsor-list').innerHTML = '';
+      (ev.sponsors || []).forEach(s => addSponsor(s));
+    }
+
+    function set(id, val) {
+      document.getElementById(id).value = val;
+    }
+
+    function clearForm() {
+      ['f-name','f-slug','f-subtitle','f-promoter-name','f-date-label','f-time-label',
+       'f-venue','f-city','f-banner-url','f-layout-url','f-description',
+       'f-dos','f-donts','f-restrictions','f-map-url','f-address',
+       'f-contact-email','f-contact-phone','f-contact-instagram'].forEach(id => {
+        document.getElementById(id).value = '';
+      });
+      document.getElementById('slug-preview-val').textContent = '—';
+      document.getElementById('tier-list').innerHTML = '';
+      document.getElementById('sponsor-list').innerHTML = '';
+      document.getElementById('banner-preview').style.display = 'none';
+      document.getElementById('layout-preview').style.display = 'none';
+    }
+
+    // ── SLUG AUTO-GENERATE ──
+    function autoSlug() {
+      if (editingSlug) return; // don't overwrite slug when editing
+      const name = document.getElementById('f-name').value;
+      const slug = name.toLowerCase()
+        .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+        .replace(/[^a-z0-9\s-]/g, '')
+        .trim().replace(/\s+/g, '-');
+      document.getElementById('f-slug').value = slug;
+      updateSlugPreview();
+    }
+
+    function updateSlugPreview() {
+      const slug = document.getElementById('f-slug').value || '—';
+      document.getElementById('slug-preview-val').textContent = slug;
+    }
+
+    // ── IMAGE PREVIEW ──
+    function previewImg(inputId, previewId) {
+      const url = document.getElementById(inputId).value;
+      const img = document.getElementById(previewId);
+      if (url) {
+        img.src = url;
+        img.style.display = 'block';
+        img.onerror = () => { img.style.display = 'none'; };
+      } else {
+        img.style.display = 'none';
+      }
+    }
+
+    // ── TIER BUILDER ──
+    let tierCount = 0;
+    function addTier(data = {}) {
+      tierCount++;
+      const id = `tier-${tierCount}`;
+      const div = document.createElement('div');
+      div.className = 'tier-item';
+      div.id = id;
+      div.innerHTML = `
+        <div>
+          <label>Nombre del tier</label>
+          <input type="text" placeholder="Ej: General" value="${data.label || ''}" class="tier-label" />
+        </div>
+        <div>
+          <label>Precio base (MXN)</label>
+          <input type="number" placeholder="650" min="0" value="${data.price || ''}" class="tier-price" />
+        </div>
+        <div>
+          <label>Capacidad (lugares)</label>
+          <input type="number" placeholder="200" min="1" value="${data.capacity || ''}" class="tier-capacity" />
+        </div>
+        <button class="tier-remove" onclick="removeTier('${id}')" title="Eliminar tier">×</button>
+      `;
+      document.getElementById('tier-list').appendChild(div);
+    }
+
+    function removeTier(id) {
+      document.getElementById(id)?.remove();
+    }
+
+    function getTiers() {
+      const items = document.querySelectorAll('.tier-item');
+      return Array.from(items).map((item, i) => ({
+        id: `tier-${i + 1}`,
+        label: item.querySelector('.tier-label').value.trim(),
+        price: parseInt(item.querySelector('.tier-price').value) || 0,
+        capacity: parseInt(item.querySelector('.tier-capacity').value) || 0
+      })).filter(t => t.label && t.price > 0);
+    }
+
+    // ── SPONSOR BUILDER ──
+    let sponsorCount = 0;
+    function addSponsor(data = {}) {
+      sponsorCount++;
+      const id = `sponsor-${sponsorCount}`;
+      const div = document.createElement('div');
+      div.className = 'sponsor-item';
+      div.id = id;
+      div.innerHTML = `
+        <div>
+          <label>Nombre del sponsor</label>
+          <input type="text" placeholder="Ej: Red Bull" value="${data.name || ''}" class="sponsor-name" />
+        </div>
+        <div>
+          <label>Logo URL (opcional)</label>
+          <input type="url" placeholder="https://..." value="${data.logo || ''}" class="sponsor-logo" />
+        </div>
+        <button class="tier-remove" onclick="removeSponsor('${id}')" title="Eliminar">×</button>
+      `;
+      document.getElementById('sponsor-list').appendChild(div);
+    }
+
+    function removeSponsor(id) {
+      document.getElementById(id)?.remove();
+    }
+
+    function getSponsors() {
+      const items = document.querySelectorAll('.sponsor-item');
+      return Array.from(items).map(item => ({
+        name: item.querySelector('.sponsor-name').value.trim(),
+        logo: item.querySelector('.sponsor-logo').value.trim()
+      })).filter(s => s.name);
+    }
+
+    // ── PANEL SWITCH ──
+    function switchPanel(panelId) {
+      document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+      document.querySelectorAll('.sidebar-link').forEach(l => l.classList.remove('active'));
+      document.getElementById(panelId)?.classList.add('active');
+
+      // Highlight sidebar link
+      document.querySelectorAll('.sidebar-link').forEach(l => {
+        if (l.getAttribute('onclick')?.includes(panelId)) l.classList.add('active');
+      });
+
+      // Scroll to top of form
+      document.querySelector('.form-panels')?.scrollTo({ top: 0 });
+
+      // Update publish summary
+      if (panelId === 'panel-publish') updatePublishSummary();
+    }
+
+    function updatePublishSummary() {
+      const name = document.getElementById('f-name').value || '—';
+      const slug = document.getElementById('f-slug').value || '—';
+      const date = document.getElementById('f-date-label').value || 'Sin fecha';
+      const venue = document.getElementById('f-venue').value || 'Sin venue';
+      const tiers = getTiers();
+
+      document.getElementById('publish-event-name').textContent = name;
+      document.getElementById('publish-event-meta').textContent = `${date} · ${venue}`;
+      document.getElementById('publish-event-url').textContent = `colectivo.live/e/?e=${slug}`;
+      document.getElementById('publish-tiers-summary').innerHTML = tiers.length
+        ? tiers.map(t => `<span style="margin-right:16px;">🎟️ ${t.label} — $${t.price.toLocaleString('es-MX')} MXN · ${t.capacity} lugares</span>`).join('<br/>')
+        : '<span style="color:#555;">Sin tiers definidos</span>';
+    }
+
+    // ── SAVE / PUBLISH ──
+    async function saveEvent(publish) {
+      const name = document.getElementById('f-name').value.trim();
+      const slug = document.getElementById('f-slug').value.trim();
+
+      if (!name || !slug) {
+        showToast('error', '⚠️ El nombre y el slug son requeridos.');
+        switchPanel('panel-info');
+        return;
+      }
+
+      const tiers = getTiers();
+      if (tiers.length === 0) {
+        showToast('error', '⚠️ Agrega al menos un tier de acceso.');
+        switchPanel('panel-tiers');
+        return;
+      }
+
+      const payload = {
+        password: savedPassword,
+        name,
+        slug,
+        subtitle: document.getElementById('f-subtitle').value.trim(),
+        promoter_name: document.getElementById('f-promoter-name').value.trim(),
+        date_label: document.getElementById('f-date-label').value.trim(),
+        time_label: document.getElementById('f-time-label').value.trim(),
+        venue: document.getElementById('f-venue').value.trim(),
+        city: document.getElementById('f-city').value.trim(),
+        banner_url: document.getElementById('f-banner-url').value.trim(),
+        layout_url: document.getElementById('f-layout-url').value.trim(),
+        description: document.getElementById('f-description').value.trim(),
+        dos: document.getElementById('f-dos').value.trim(),
+        donts: document.getElementById('f-donts').value.trim(),
+        restrictions: document.getElementById('f-restrictions').value.trim(),
+        map_url: document.getElementById('f-map-url').value.trim(),
+        address: document.getElementById('f-address').value.trim(),
+        contact_email: document.getElementById('f-contact-email').value.trim(),
+        contact_phone: document.getElementById('f-contact-phone').value.trim(),
+        contact_instagram: document.getElementById('f-contact-instagram').value.trim(),
+        sponsors: getSponsors(),
+        tiers,
+        published: publish
+      };
+
+      const isEdit = !!editingSlug;
+      const url = isEdit
+        ? `${API}/admin/events/${editingSlug}`
+        : `${API}/admin/events`;
+      const method = isEdit ? 'PUT' : 'POST';
+
+      try {
+        const r = await fetch(url, {
+          method,
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        const data = await r.json();
+
+        if (!r.ok) {
+          showToast('error', data.error || 'Error al guardar.');
+          return;
+        }
+
+        editingSlug = data.slug; // after create, set editingSlug so subsequent saves are updates
+        showToast('success', publish ? '🚀 Evento publicado con éxito.' : '💾 Borrador guardado.');
+
+        if (publish) {
+          setTimeout(() => {
+            switchPanel('panel-publish');
+            updatePublishSummary();
+          }, 500);
+        }
+      } catch (err) {
+        showToast('error', 'Error de red. Intenta de nuevo.');
+      }
+    }
+
+    // ── TOAST ──
+    let toastTimer;
+    function showToast(type, msg) {
+      const el = document.getElementById('toast');
+      el.textContent = msg;
+      el.className = `toast ${type}`;
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => { el.style.display = 'none'; }, 4000);
+    }
+  </script>
+
+</body>
+</html>
