@@ -478,7 +478,7 @@
             <div class="form-row">
               <label>Slug (URL) <span>*</span></label>
               <input type="text" class="form-input" id="f-slug" placeholder="caballeros-aniversario" oninput="updateSlugPreview()" />
-              <div class="slug-preview">colectivo.live/e/<span id="slug-preview-val">—</span></div>
+              <div class="slug-preview">colectivo.live/e/?e=<span id="slug-preview-val">—</span></div>
             </div>
 
             <div class="form-row">
@@ -714,7 +714,7 @@
               <h3 id="publish-event-name">—</h3>
               <p id="publish-event-meta" style="color:var(--muted);font-size:13px;margin-top:4px;">—</p>
               <div id="publish-tiers-summary" style="margin-top:12px;font-size:13px;color:var(--muted);"></div>
-              <div class="event-url" id="publish-event-url">colectivo.live/e/—</div>
+              <div class="event-url" id="publish-event-url">colectivo.live/e/?e=—</div>
             </div>
 
             <div class="publish-actions">
@@ -781,7 +781,7 @@
           <div class="event-slug">/${ev.slug}</div>
           <div class="event-card-actions">
             <button class="btn btn-ghost btn-sm" onclick="loadEventForEdit('${ev.slug}')">✏️ Editar</button>
-            <button class="btn btn-ghost btn-sm" onclick="window.open('https://colectivo.live/e/?e=${ev.slug}', '_blank')">🔗 Ver página</button>
+            <button class="btn btn-ghost btn-sm" onclick="window.open('https://colectivo.live/e/?e=' + ev.slug, '_blank')">🔗 Ver página</button>
           </div>
         </div>
       `).join('');
@@ -1002,6 +1002,8 @@
       document.getElementById('publish-event-name').textContent = name;
       document.getElementById('publish-event-meta').textContent = `${date} · ${venue}`;
       document.getElementById('publish-event-url').textContent = `colectivo.live/e/?e=${slug}`;
+      document.getElementById('publish-event-url').style.cursor = 'pointer';
+      document.getElementById('publish-event-url').onclick = () => window.open(`https://colectivo.live/e/?e=${slug}`, '_blank');
       document.getElementById('publish-tiers-summary').innerHTML = tiers.length
         ? tiers.map(t => `<span style="margin-right:16px;">🎟️ ${t.label} — $${t.price.toLocaleString('es-MX')} MXN · ${t.capacity} lugares</span>`).join('<br/>')
         : '<span style="color:#555;">Sin tiers definidos</span>';
