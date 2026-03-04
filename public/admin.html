@@ -234,12 +234,12 @@
           <div class="rev-card c-white">
             <div class="rev-label">Total recaudado</div>
             <div class="rev-value" id="rev-gross">—</div>
-            <div class="rev-sub">Cobrado a clientes (base + 6%)</div>
+            <div class="rev-sub">Cobrado a clientes (base + 8%)</div>
           </div>
           <div class="rev-card c-yellow">
             <div class="rev-label">Comisión Colectivo</div>
             <div class="rev-value" id="rev-commission">—</div>
-            <div class="rev-sub">6% sobre precio base</div>
+            <div class="rev-sub">8% sobre precio base</div>
           </div>
           <div class="rev-card hero">
             <div class="rev-label">// Ingreso promotor</div>
@@ -480,8 +480,8 @@
         const tier = parseTier(r.student_name);
         const cfg  = TIER_CONFIG[tier];
         if (!cfg) continue;
-        gross        += Math.round(cfg.base * 1.06);  // what buyer paid
-        commission   += cfg.base * 0.06;              // Colectivo's 6%
+        gross        += Math.round(cfg.base * 1.08);  // what buyer paid
+        commission   += cfg.base * 0.08;              // Colectivo's 8%
         promoterBase += cfg.base;                     // base price to promoter
       }
 
@@ -503,7 +503,7 @@
         const cfg  = TIER_CONFIG[tier];
         if (!cfg || !tierData[tier]) continue;
         tierData[tier].sold++;
-        tierData[tier].gross += Math.round(cfg.base * 1.06);
+        tierData[tier].gross += Math.round(cfg.base * 1.08);
         if (r.checked_in) tierData[tier].checkedIn++;
       }
 
@@ -580,7 +580,7 @@
       // Revenue for this order
       const tier = parseTier(r.student_name);
       const cfg  = TIER_CONFIG[tier];
-      const orderGross = cfg ? Math.round(cfg.base * 1.06) * totalTickets : null;
+      const orderGross = cfg ? Math.round(cfg.base * 1.08) * totalTickets : null;
 
       document.getElementById('modal-tag').textContent =
         totalTickets > 1 ? `// ${totalTickets} boletos · ${checkedCount} ingresaron` : '// 1 boleto';

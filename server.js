@@ -133,7 +133,7 @@ app.post('/create-checkout', async (req, res) => {
     // Generate one UUID per ticket upfront for deduplication
     const registrationIds = Array.from({ length: qty }, () => uuidv4()).join(',');
     const tierLabel = `${eventName} — ${tierData.label}`;
-    const chargedAmount = Math.round(tierData.price * 1.06);
+    const chargedAmount = Math.round(tierData.price * 1.08);
 
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ['card'],
