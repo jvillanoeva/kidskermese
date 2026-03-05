@@ -113,6 +113,45 @@ app.get('/auth/me', requireAuth, async (req, res) => {
   });
 });
 
+// POST /auth/set-password — invited user sets their password using token from email
+app.post('/auth/set-password', async (req, res) => {
+  const { access_token, refresh_token, password } = req.body;
+  if (!access_token || !password) {
+    return res.status(400).json({ error: 'Token y contraseña requeridos.' });
+  }
+  if (password.length < 8) {
+    return res.status(400).json({ error: 'La contraseña debe tener al menos 8 caracteres.' });
+  }
+
+  try {
+    // Create a client scoped to this user's session
+    const { createClient: createUserClient } = require('@supabase/supabase-js');
+    const userClient = createUserClient(process.env.SUPABASE_URL, process.env.SUPABASE_ANON_KEY);
+
+    // Set the session with the invite tokens
+    const { error: sessionError } = await userClient.auth.setSession({ access_token, refresh_token });
+    if (sessionError) return res.status(401).json({ error: 'Token inválido o expirado.' });
+
+    // Update the password
+    const { data, error: updateError } = await userClient.auth.updateUser({ password });
+    if (updateError) return res.status(500).json({ error: 'Error al establecer la contraseña.' });
+
+    // Return a fresh token so they can log in immediately
+    const { data: session } = await userClient.auth.getSession();
+    const { data: profile } = await supabase
+      .from('profiles').select('role').eq('id', data.user.id).single();
+
+    return res.status(200).json({
+      success: true,
+      token: session?.session?.access_token,
+      user: { id: data.user.id, email: data.user.email, role: profile?.role || 'promoter' }
+    });
+  } catch (err) {
+    console.error('Set password error:', err);
+    return res.status(500).json({ error: 'Error interno.' });
+  }
+});
+
 // POST /auth/invite — superadmin invites a new promoter
 app.post('/auth/invite', requireAuth, requireSuperAdmin, async (req, res) => {
   const { email } = req.body;
@@ -124,7 +163,13 @@ app.post('/auth/invite', requireAuth, requireSuperAdmin, async (req, res) => {
 
   if (error) {
     console.error('Invite error:', error);
-    return res.status(500).json({ error: 'Error al enviar la invitación.' });
+    const msg =
+      error.message?.toLowerCase().includes('already registered') ||
+      error.message?.toLowerCase().includes('already been invited') ||
+      error.code === 'email_exists'
+        ? 'Este correo ya tiene una cuenta en Colectivo.'
+        : 'Error al enviar la invitación. Intenta de nuevo.';
+    return res.status(500).json({ error: msg });
   }
 
   return res.status(200).json({ success: true, email });
@@ -162,9 +207,9 @@ app.get('/availability', async (req, res) => {
     tiers = eventData.tiers;
   } else {
     tiers = {
-      early:   { label: 'Early Bird',  price: 65000,  capacity: 150 },
-      general: { label: 'General',     price: 95000,  capacity: 500 },
-      vip:     { label: 'VIP',         price: 180000, capacity: 50  }
+      early:   { label: 'Early Bird',  price: 650,  capacity: 150 },
+      general: { label: 'General',     price: 950,  capacity: 500 },
+      vip:     { label: 'VIP',         price: 1800, capacity: 50  }
     };
   }
 
@@ -207,6 +252,11 @@ app.post('/create-checkout', async (req, res) => {
       vip:     { label: 'VIP',         price: 180000, capacity: 50  }
     };
     eventName = 'Aniversario Caballeros';
+    tiers = {
+      early:   { label: 'Early Bird',  price: 650,  capacity: 150 },
+      general: { label: 'General',     price: 950,  capacity: 500 },
+      vip:     { label: 'VIP',         price: 1800, capacity: 50  }
+    };
   }
 
   const tierData = tiers[tier];
@@ -235,7 +285,7 @@ app.post('/create-checkout', async (req, res) => {
 
     const registrationIds = Array.from({ length: qty }, () => uuidv4()).join(',');
     const tierLabel = `${eventName} — ${tierData.label}`;
-    const chargedAmount = Math.round(tierData.price * 1.08);
+    const chargedAmount = Math.round(tierData.price * 1.08); // in pesos
 
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ['card'],
@@ -244,7 +294,7 @@ app.post('/create-checkout', async (req, res) => {
       line_items: [{
         price_data: {
           currency: 'mxn',
-          unit_amount: chargedAmount,
+          unit_amount: chargedAmount * 100, // Stripe expects centavos
           product_data: {
             name: `${eventName} — ${tierData.label}`,
             description: `Acceso ${tierData.label} · incluye cargo por servicio Colectivo`
