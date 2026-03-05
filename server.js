@@ -641,6 +641,128 @@ app.delete('/admin/events/:slug', async (req, res) => {
 });
 
 // ─────────────────────────────────────────────
+//  EVENT CRUD — v2 (JWT auth)
+// ─────────────────────────────────────────────
+
+// GET /v2/admin/events
+app.get('/v2/admin/events', requireAuth, async (req, res) => {
+  const { data, error } = await supabase
+    .from('events')
+    .select('id, slug, name, date_label, published, created_at')
+    .order('created_at', { ascending: false });
+  if (error) return res.status(500).json({ error: 'Error al obtener eventos.' });
+  return res.status(200).json(data);
+});
+
+// GET /v2/admin/events/:slug
+app.get('/v2/admin/events/:slug', requireAuth, async (req, res) => {
+  const { data, error } = await supabase
+    .from('events')
+    .select('*')
+    .eq('slug', req.params.slug)
+    .single();
+  if (error || !data) return res.status(404).json({ error: 'Evento no encontrado.' });
+  return res.status(200).json(data);
+});
+
+// POST /v2/admin/events
+app.post('/v2/admin/events', requireAuth, async (req, res) => {
+  const eventData = { ...req.body };
+  delete eventData.password;
+  if (!eventData.slug || !eventData.name) {
+    return res.status(400).json({ error: 'slug y name son requeridos.' });
+  }
+  eventData.slug = eventData.slug.toLowerCase().replace(/[^a-z0-9-]/g, '-');
+  eventData.user_id = req.user.id;
+  eventData.user_email = req.user.email;
+
+  const { data, error } = await supabase
+    .from('events').insert([eventData]).select().single();
+  if (error) {
+    if (error.code === '23505') return res.status(409).json({ error: 'Ya existe un evento con ese slug.' });
+    return res.status(500).json({ error: 'Error al crear el evento.' });
+  }
+  return res.status(201).json(data);
+});
+
+// PUT /v2/admin/events/:slug
+app.put('/v2/admin/events/:slug', requireAuth, async (req, res) => {
+  const eventData = { ...req.body };
+  delete eventData.password;
+  delete eventData.slug;
+  delete eventData.id;
+  delete eventData.created_at;
+
+  const { data, error } = await supabase
+    .from('events').update(eventData).eq('slug', req.params.slug).select().single();
+  if (error) return res.status(500).json({ error: 'Error al actualizar el evento.' });
+  if (!data) return res.status(404).json({ error: 'Evento no encontrado.' });
+  return res.status(200).json(data);
+});
+
+// DELETE /v2/admin/events/:slug
+app.delete('/v2/admin/events/:slug', requireAuth, async (req, res) => {
+  const { error } = await supabase
+    .from('events').update({ published: false }).eq('slug', req.params.slug);
+  if (error) return res.status(500).json({ error: 'Error al eliminar el evento.' });
+  return res.status(200).json({ success: true });
+});
+
+// GET /v2/admin/events/:slug/stats
+app.get('/v2/admin/events/:slug/stats', requireAuth, async (req, res) => {
+  const { slug } = req.params;
+
+  const { data: event, error: evErr } = await supabase
+    .from('events').select('*').eq('slug', slug).single();
+  if (evErr || !event) return res.status(404).json({ error: 'Evento no encontrado.' });
+
+  const { data: registrations } = await supabase
+    .from('registrations')
+    .select('*')
+    .eq('event_slug', slug)
+    .eq('payment_status', 'paid')
+    .order('created_at', { ascending: false });
+
+  const regs = registrations || [];
+  const tiers = event.tiers || [];
+
+  const tierStats = tiers.map(tier => {
+    const tierRegs = regs.filter(r => r.student_name?.includes(tier.label));
+    const sold = tierRegs.length;
+    return {
+      id: tier.id,
+      label: tier.label,
+      price: tier.price,
+      capacity: tier.capacity,
+      sold,
+      available: Math.max(0, tier.capacity - sold),
+      revenue: sold * tier.price
+    };
+  });
+
+  const totalSold = tierStats.reduce((s, t) => s + t.sold, 0);
+  const totalRevenue = tierStats.reduce((s, t) => s + t.revenue, 0);
+  const totalCapacity = tierStats.reduce((s, t) => s + t.capacity, 0);
+
+  return res.status(200).json({
+    event: { slug: event.slug, name: event.name, date_label: event.date_label, venue: event.venue },
+    stats: {
+      totalSold,
+      totalRevenue,
+      totalCapacity,
+      fillRate: totalCapacity > 0 ? Math.round((totalSold / totalCapacity) * 100) : 0
+    },
+    tiers: tierStats,
+    registrations: regs.map(r => ({
+      id: r.id, name: r.name, email: r.email,
+      phone: r.phone, student_name: r.student_name,
+      created_at: r.created_at, checked_in: r.checked_in,
+      checked_in_at: r.checked_in_at
+    }))
+  });
+});
+
+// ─────────────────────────────────────────────
 //  START SERVER
 // ─────────────────────────────────────────────
 const PORT = process.env.PORT || 3000;
