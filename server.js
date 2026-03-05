@@ -50,16 +50,15 @@ async function requireAuth(req, res, next) {
   const { data: { user }, error } = await supabase.auth.getUser(token);
   if (error || !user) return res.status(401).json({ error: 'Token inválido o expirado.' });
   req.user = user;
+  // Attach role so all endpoints can scope by it without extra queries
+  const { data: profile } = await supabase
+    .from('profiles').select('role').eq('id', user.id).single();
+  req.user.role = profile?.role || 'promoter';
   next();
 }
 
 async function requireSuperAdmin(req, res, next) {
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('role')
-    .eq('id', req.user.id)
-    .single();
-  if (profile?.role !== 'superadmin') {
+  if (req.user.role !== 'superadmin') {
     return res.status(403).json({ error: 'Acceso denegado. Se requiere superadmin.' });
   }
   next();
@@ -753,21 +752,26 @@ app.delete('/admin/events/:slug', async (req, res) => {
 
 // GET /v2/admin/events
 app.get('/v2/admin/events', requireAuth, async (req, res) => {
-  const { data, error } = await supabase
+  let query = supabase
     .from('events')
-    .select('id, slug, name, date_label, published, created_at')
+    .select('id, slug, name, date_label, published, created_at, user_id')
     .order('created_at', { ascending: false });
+  // Promoters only see their own events; superadmin sees all
+  if (req.user.role !== 'superadmin') {
+    query = query.eq('user_id', req.user.id);
+  }
+  const { data, error } = await query;
   if (error) return res.status(500).json({ error: 'Error al obtener eventos.' });
   return res.status(200).json(data);
 });
 
 // GET /v2/admin/events/:slug
 app.get('/v2/admin/events/:slug', requireAuth, async (req, res) => {
-  const { data, error } = await supabase
-    .from('events')
-    .select('*')
-    .eq('slug', req.params.slug)
-    .single();
+  let query = supabase.from('events').select('*').eq('slug', req.params.slug);
+  if (req.user.role !== 'superadmin') {
+    query = query.eq('user_id', req.user.id);
+  }
+  const { data, error } = await query.single();
   if (error || !data) return res.status(404).json({ error: 'Evento no encontrado.' });
   return res.status(200).json(data);
 });
@@ -800,17 +804,23 @@ app.put('/v2/admin/events/:slug', requireAuth, async (req, res) => {
   delete eventData.id;
   delete eventData.created_at;
 
-  const { data, error } = await supabase
-    .from('events').update(eventData).eq('slug', req.params.slug).select().single();
+  let query = supabase.from('events').update(eventData).eq('slug', req.params.slug);
+  if (req.user.role !== 'superadmin') {
+    query = query.eq('user_id', req.user.id);
+  }
+  const { data, error } = await query.select().single();
   if (error) return res.status(500).json({ error: 'Error al actualizar el evento.' });
-  if (!data) return res.status(404).json({ error: 'Evento no encontrado.' });
+  if (!data) return res.status(404).json({ error: 'Evento no encontrado o sin permiso.' });
   return res.status(200).json(data);
 });
 
 // DELETE /v2/admin/events/:slug
 app.delete('/v2/admin/events/:slug', requireAuth, async (req, res) => {
-  const { error } = await supabase
-    .from('events').update({ published: false }).eq('slug', req.params.slug);
+  let query = supabase.from('events').update({ published: false }).eq('slug', req.params.slug);
+  if (req.user.role !== 'superadmin') {
+    query = query.eq('user_id', req.user.id);
+  }
+  const { error } = await query;
   if (error) return res.status(500).json({ error: 'Error al eliminar el evento.' });
   return res.status(200).json({ success: true });
 });
@@ -819,8 +829,11 @@ app.delete('/v2/admin/events/:slug', requireAuth, async (req, res) => {
 app.get('/v2/admin/events/:slug/stats', requireAuth, async (req, res) => {
   const { slug } = req.params;
 
-  const { data: event, error: evErr } = await supabase
-    .from('events').select('*').eq('slug', slug).single();
+  let evQuery = supabase.from('events').select('*').eq('slug', slug);
+  if (req.user.role !== 'superadmin') {
+    evQuery = evQuery.eq('user_id', req.user.id);
+  }
+  const { data: event, error: evErr } = await evQuery.single();
   if (evErr || !event) return res.status(404).json({ error: 'Evento no encontrado.' });
 
   const { data: registrations } = await supabase
