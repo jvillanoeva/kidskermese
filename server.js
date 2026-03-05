@@ -168,7 +168,7 @@ app.post('/auth/invite', requireAuth, requireSuperAdmin, async (req, res) => {
       error.message?.toLowerCase().includes('already been invited') ||
       error.code === 'email_exists'
         ? 'Este correo ya tiene una cuenta en Colectivo.'
-        : 'Error al enviar la invitación. Intenta de nuevo.';
+        : `Error: ${error.message || 'desconocido'}`;
     return res.status(500).json({ error: msg });
   }
 
