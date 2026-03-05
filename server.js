@@ -11,17 +11,124 @@ const Stripe = require('stripe');
 const app = express();
 app.use(cors());
 app.use(express.json());
+
+// ── Root → redirect to Colectivo login ──
+app.get('/', (req, res) => {
+  res.redirect('https://colectivo.live/login');
+});
+
+// Serve success.html and other static assets (but NOT Kids Kermesse index)
 app.use(express.static(path.join(__dirname, 'public')));
 
 // Init clients
+// supabase: service role — for admin operations + JWT verification
 const supabase = createClient(
   process.env.SUPABASE_URL,
   process.env.SUPABASE_SERVICE_KEY
 );
+// supabaseAnon: anon key — for user-facing auth (signIn)
+const supabaseAnon = createClient(
+  process.env.SUPABASE_URL,
+  process.env.SUPABASE_ANON_KEY
+);
+
 const resend = new Resend(process.env.RESEND_API_KEY);
 const stripe = Stripe(process.env.STRIPE_SECRET_KEY);
 
 const BASE_URL = process.env.BASE_URL || 'https://api.colectivo.live';
+
+// ─────────────────────────────────────────────
+//  AUTH MIDDLEWARE
+// ─────────────────────────────────────────────
+
+async function requireAuth(req, res, next) {
+  const auth = req.headers.authorization;
+  if (!auth?.startsWith('Bearer ')) {
+    return res.status(401).json({ error: 'No autorizado.' });
+  }
+  const token = auth.slice(7);
+  const { data: { user }, error } = await supabase.auth.getUser(token);
+  if (error || !user) return res.status(401).json({ error: 'Token inválido o expirado.' });
+  req.user = user;
+  next();
+}
+
+async function requireSuperAdmin(req, res, next) {
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('role')
+    .eq('id', req.user.id)
+    .single();
+  if (profile?.role !== 'superadmin') {
+    return res.status(403).json({ error: 'Acceso denegado. Se requiere superadmin.' });
+  }
+  next();
+}
+
+// ─────────────────────────────────────────────
+//  AUTH ROUTES
+// ─────────────────────────────────────────────
+
+// POST /auth/login
+app.post('/auth/login', async (req, res) => {
+  const { email, password } = req.body;
+  if (!email || !password) {
+    return res.status(400).json({ error: 'Email y contraseña requeridos.' });
+  }
+
+  const { data, error } = await supabaseAnon.auth.signInWithPassword({ email, password });
+  if (error) return res.status(401).json({ error: 'Credenciales incorrectas.' });
+
+  // Fetch role from profiles
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('role')
+    .eq('id', data.user.id)
+    .single();
+
+  return res.status(200).json({
+    token: data.session.access_token,
+    refresh_token: data.session.refresh_token,
+    expires_at: data.session.expires_at,
+    user: {
+      id: data.user.id,
+      email: data.user.email,
+      role: profile?.role || 'promoter'
+    }
+  });
+});
+
+// GET /auth/me — verify token + return user info
+app.get('/auth/me', requireAuth, async (req, res) => {
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('role')
+    .eq('id', req.user.id)
+    .single();
+
+  return res.status(200).json({
+    id: req.user.id,
+    email: req.user.email,
+    role: profile?.role || 'promoter'
+  });
+});
+
+// POST /auth/invite — superadmin invites a new promoter
+app.post('/auth/invite', requireAuth, requireSuperAdmin, async (req, res) => {
+  const { email } = req.body;
+  if (!email) return res.status(400).json({ error: 'Email requerido.' });
+
+  const { data, error } = await supabase.auth.admin.inviteUserByEmail(email, {
+    redirectTo: 'https://colectivo.live/set-password'
+  });
+
+  if (error) {
+    console.error('Invite error:', error);
+    return res.status(500).json({ error: 'Error al enviar la invitación.' });
+  }
+
+  return res.status(200).json({ success: true, email });
+});
 
 // ─────────────────────────────────────────────
 //  HELPER: load tiers for a given event slug
@@ -35,7 +142,6 @@ async function getEventTiers(eventSlug) {
     .eq('published', true)
     .single();
   if (error || !data) return null;
-  // tiers stored as array: [{ id, label, price, capacity }]
   const map = {};
   for (const t of data.tiers || []) {
     map[t.id] = { label: t.label, price: t.price, capacity: t.capacity };
@@ -55,7 +161,6 @@ app.get('/availability', async (req, res) => {
     if (!eventData) return res.status(404).json({ error: 'Evento no encontrado.' });
     tiers = eventData.tiers;
   } else {
-    // Legacy fallback for caballeros-aniversario
     tiers = {
       early:   { label: 'Early Bird',  price: 65000,  capacity: 150 },
       general: { label: 'General',     price: 95000,  capacity: 500 },
@@ -96,7 +201,6 @@ app.post('/create-checkout', async (req, res) => {
     tiers = eventData.tiers;
     eventName = eventData.eventName;
   } else {
-    // Legacy fallback
     tiers = {
       early:   { label: 'Early Bird',  price: 65000,  capacity: 150 },
       general: { label: 'General',     price: 95000,  capacity: 500 },
@@ -113,7 +217,6 @@ app.post('/create-checkout', async (req, res) => {
   const qty = Math.min(Math.max(parseInt(quantity) || 1, 1), 4);
 
   try {
-    // Check available capacity
     const { count: sold } = await supabase
       .from('registrations')
       .select('*', { count: 'exact', head: true })
@@ -130,7 +233,6 @@ app.post('/create-checkout', async (req, res) => {
       });
     }
 
-    // Generate one UUID per ticket upfront for deduplication
     const registrationIds = Array.from({ length: qty }, () => uuidv4()).join(',');
     const tierLabel = `${eventName} — ${tierData.label}`;
     const chargedAmount = Math.round(tierData.price * 1.08);
@@ -179,7 +281,6 @@ app.post('/confirm-payment', async (req, res) => {
   if (!session_id) return res.status(400).json({ error: 'Session ID requerido.' });
 
   try {
-    // Verify payment with Stripe
     const session = await stripe.checkout.sessions.retrieve(session_id);
     if (session.payment_status !== 'paid') {
       return res.status(400).json({ error: 'Pago no completado.' });
@@ -189,7 +290,6 @@ app.post('/confirm-payment', async (req, res) => {
     const ids = registrationIds.split(',');
     const qty = parseInt(quantity) || 1;
 
-    // Dedup check — use first ID
     const { data: existing } = await supabase
       .from('registrations')
       .select('payment_status')
@@ -200,7 +300,6 @@ app.post('/confirm-payment', async (req, res) => {
       return res.status(200).json({ success: true, alreadyConfirmed: true, name, email, quantity: qty });
     }
 
-    // Generate QR codes — both dataURL (inline) and Buffer (attachment)
     const qrCodes = [];
     const attachments = [];
     const insertRows = [];
@@ -208,14 +307,8 @@ app.post('/confirm-payment', async (req, res) => {
     for (let i = 0; i < ids.length; i++) {
       const ticketId = ids[i];
       const [qrDataURL, qrBuffer] = await Promise.all([
-        QRCode.toDataURL(ticketId, {
-          width: 300, margin: 2,
-          color: { dark: '#080808', light: '#ffffff' }
-        }),
-        QRCode.toBuffer(ticketId, {
-          width: 300, margin: 2,
-          color: { dark: '#080808', light: '#ffffff' }
-        })
+        QRCode.toDataURL(ticketId, { width: 300, margin: 2, color: { dark: '#080808', light: '#ffffff' } }),
+        QRCode.toBuffer(ticketId, { width: 300, margin: 2, color: { dark: '#080808', light: '#ffffff' } })
       ]);
 
       qrCodes.push({ id: ticketId, qrDataURL });
@@ -232,17 +325,13 @@ app.post('/confirm-payment', async (req, res) => {
       });
     }
 
-    const { error: insertError } = await supabase
-      .from('registrations')
-      .insert(insertRows);
+    const { error: insertError } = await supabase.from('registrations').insert(insertRows);
     if (insertError) {
       console.error('Supabase insert error:', insertError);
       return res.status(500).json({ error: 'Error al guardar el registro.' });
     }
 
-    // Get event display name for email subject
     const eventDisplay = student_name.split(' — ')[0] || 'Colectivo';
-
     await resend.emails.send({
       from: process.env.RESEND_FROM_EMAIL,
       to: email,
@@ -264,7 +353,6 @@ app.post('/confirm-payment', async (req, res) => {
 // ─────────────────────────────────────────────
 app.post('/admin/resend-email', async (req, res) => {
   const { email, password } = req.body;
-
   if (password !== process.env.ADMIN_PASSWORD) {
     return res.status(401).json({ error: 'No autorizado.' });
   }
@@ -284,23 +372,15 @@ app.post('/admin/resend-email', async (req, res) => {
 
     const { name, student_name } = registrations[0];
     const qty = registrations.length;
-
     const qrCodes = [];
     const attachments = [];
 
     for (let i = 0; i < registrations.length; i++) {
       const ticketId = registrations[i].id;
       const [qrDataURL, qrBuffer] = await Promise.all([
-        QRCode.toDataURL(ticketId, {
-          width: 300, margin: 2,
-          color: { dark: '#080808', light: '#ffffff' }
-        }),
-        QRCode.toBuffer(ticketId, {
-          width: 300, margin: 2,
-          color: { dark: '#080808', light: '#ffffff' }
-        })
+        QRCode.toDataURL(ticketId, { width: 300, margin: 2, color: { dark: '#080808', light: '#ffffff' } }),
+        QRCode.toBuffer(ticketId, { width: 300, margin: 2, color: { dark: '#080808', light: '#ffffff' } })
       ]);
-
       qrCodes.push({ id: ticketId, qrDataURL });
       attachments.push({
         filename: qty > 1 ? `ticket-${i + 1}-de-${qty}.png` : 'ticket.png',
@@ -384,7 +464,7 @@ function buildEmailHTML({ name, student_name, qrCodes }) {
         ${qty > 1 ? `<p>Cantidad: <strong>${qty} boletos</strong></p>` : ''}
       </div>
       <div class="attachment-note">
-        📎 <strong>¿No ves el QR?</strong> También está adjunto como imagen PNG en este correo — búscalo en los archivos adjuntos.
+        📎 <strong>¿No ves el QR?</strong> También está adjunto como imagen PNG en este correo.
       </div>
       ${qrBlocks}
     </div>
@@ -424,11 +504,9 @@ app.get('/admin/registrations', async (req, res) => {
 // ─────────────────────────────────────────────
 app.post('/verify', async (req, res) => {
   const { id, password } = req.body;
-
   if (password !== process.env.ADMIN_PASSWORD) {
     return res.status(401).json({ error: 'No autorizado.' });
   }
-
   if (!id) return res.status(400).json({ error: 'ID requerido.' });
 
   const { data, error } = await supabase
@@ -442,11 +520,7 @@ app.post('/verify', async (req, res) => {
   }
 
   if (data.checked_in) {
-    return res.status(200).json({
-      status: 'already_checked_in',
-      message: 'Ya ingresó al evento.',
-      registration: data
-    });
+    return res.status(200).json({ status: 'already_checked_in', message: 'Ya ingresó al evento.', registration: data });
   }
 
   await supabase
@@ -454,18 +528,13 @@ app.post('/verify', async (req, res) => {
     .update({ checked_in: true, checked_in_at: new Date().toISOString() })
     .eq('id', id);
 
-  return res.status(200).json({
-    status: 'success',
-    message: '¡Acceso válido!',
-    registration: data
-  });
+  return res.status(200).json({ status: 'success', message: '¡Acceso válido!', registration: data });
 });
 
 // ─────────────────────────────────────────────
 //  EVENT CRUD — PUBLIC
 // ─────────────────────────────────────────────
 
-// GET /events/:slug — public event page data
 app.get('/events/:slug', async (req, res) => {
   const { slug } = req.params;
   const { data, error } = await supabase
@@ -481,16 +550,14 @@ app.get('/events/:slug', async (req, res) => {
 });
 
 // ─────────────────────────────────────────────
-//  EVENT CRUD — ADMIN
+//  EVENT CRUD — ADMIN (legacy password auth)
 // ─────────────────────────────────────────────
 
-// GET /admin/events — list all events
 app.get('/admin/events', async (req, res) => {
   const { password } = req.query;
   if (password !== process.env.ADMIN_PASSWORD) {
     return res.status(401).json({ error: 'No autorizado.' });
   }
-
   const { data, error } = await supabase
     .from('events')
     .select('id, slug, name, date_label, published, created_at')
@@ -500,13 +567,11 @@ app.get('/admin/events', async (req, res) => {
   return res.status(200).json(data);
 });
 
-// GET /admin/events/:slug — get single event (includes unpublished)
 app.get('/admin/events/:slug', async (req, res) => {
   const { password } = req.query;
   if (password !== process.env.ADMIN_PASSWORD) {
     return res.status(401).json({ error: 'No autorizado.' });
   }
-
   const { data, error } = await supabase
     .from('events')
     .select('*')
@@ -517,18 +582,14 @@ app.get('/admin/events/:slug', async (req, res) => {
   return res.status(200).json(data);
 });
 
-// POST /admin/events — create event
 app.post('/admin/events', async (req, res) => {
   const { password, ...eventData } = req.body;
   if (password !== process.env.ADMIN_PASSWORD) {
     return res.status(401).json({ error: 'No autorizado.' });
   }
-
   if (!eventData.slug || !eventData.name) {
     return res.status(400).json({ error: 'slug y name son requeridos.' });
   }
-
-  // Sanitize slug
   eventData.slug = eventData.slug.toLowerCase().replace(/[^a-z0-9-]/g, '-');
 
   const { data, error } = await supabase
@@ -541,18 +602,14 @@ app.post('/admin/events', async (req, res) => {
     if (error.code === '23505') return res.status(409).json({ error: 'Ya existe un evento con ese slug.' });
     return res.status(500).json({ error: 'Error al crear el evento.' });
   }
-
   return res.status(201).json(data);
 });
 
-// PUT /admin/events/:slug — update event
 app.put('/admin/events/:slug', async (req, res) => {
   const { password, ...eventData } = req.body;
   if (password !== process.env.ADMIN_PASSWORD) {
     return res.status(401).json({ error: 'No autorizado.' });
   }
-
-  // Don't allow slug change via this endpoint
   delete eventData.slug;
   delete eventData.id;
   delete eventData.created_at;
@@ -566,17 +623,14 @@ app.put('/admin/events/:slug', async (req, res) => {
 
   if (error) return res.status(500).json({ error: 'Error al actualizar el evento.' });
   if (!data) return res.status(404).json({ error: 'Evento no encontrado.' });
-
   return res.status(200).json(data);
 });
 
-// DELETE /admin/events/:slug — delete event (soft: set published=false)
 app.delete('/admin/events/:slug', async (req, res) => {
   const { password } = req.body;
   if (password !== process.env.ADMIN_PASSWORD) {
     return res.status(401).json({ error: 'No autorizado.' });
   }
-
   const { error } = await supabase
     .from('events')
     .update({ published: false })
