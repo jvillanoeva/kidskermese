@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Admin — Colectivo</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Google+Sans+Flex&family=Space+Mono:wght@400;700&display=swap');
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --black: #080808; --surface: #111; --surface2: #1a1a1a;
+      --border: #222; --border2: #2a2a2a; --white: #f5f0e8;
+      --muted: #888; --accent: #FF3B1F; --yellow: #F5E642; --green: #27ae60;
+    }
+    body { font-family: 'Google Sans Flex', sans-serif; background: var(--black); color: var(--white); min-height: 100vh; }
+    nav { padding: 20px 40px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); position: sticky; top: 0; background: var(--black); z-index: 50; }
+    .nav-logo { font-family: 'Space Mono', monospace; font-weight: 700; font-size: 14px; letter-spacing: 4px; color: var(--white); text-decoration: none; opacity: 0.5; }
+    .nav-right { display: flex; align-items: center; gap: 16px; }
+    .nav-user { font-family: 'Space Mono', monospace; font-size: 10px; letter-spacing: 2px; color: #444; }
+    .nav-logout { font-family: 'Space Mono', monospace; font-size: 10px; letter-spacing: 2px; color: #555; background: none; border: none; cursor: pointer; text-transform: uppercase; }
+    .nav-logout:hover { color: var(--accent); }
+    .page-header { padding: 40px 40px 28px; display: flex; justify-content: space-between; align-items: flex-end; border-bottom: 1px solid var(--border); }
+    .page-header-left { display: flex; align-items: center; gap: 20px; }
+    .page-header-back { font-family: 'Space Mono', monospace; font-size: 11px; letter-spacing: 2px; color: #555; background: none; border: none; cursor: pointer; text-transform: uppercase; }
+    .page-header-back:hover { color: var(--accent); }
+    .page-header-info h1 { font-size: 32px; font-weight: 800; letter-spacing: -0.5px; margin-bottom: 4px; }
+    .page-header-date { font-family: 'Space Mono', monospace; font-size: 10px; letter-spacing: 2px; color: #555; }
+    .admin-section { padding: 36px 40px 80px; }
+    .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 48px; }
+    .stat-card { background: var(--surface); border: 1px solid var(--border); padding: 24px; }
+    .stat-card-label { font-family: 'Space Mono', monospace; font-size: 10px; letter-spacing: 3px; color: #555; text-transform: uppercase; margin-bottom: 12px; }
+    .stat-card-value { font-size: 28px; font-weight: 800; letter-spacing: -1px; color: var(--white); margin-bottom: 4px; }
+    .stat-card-unit { font-family: 'Space Mono', monospace; font-size: 10px; letter-spacing: 2px; color: #555; }
+    .section-title { font-size: 20px; font-weight: 800; letter-spacing: -0.5px; margin-bottom: 20px; margin-top: 40px; }
+    .section-title:first-child { margin-top: 0; }
+    .table-wrapper { overflow-x: auto; margin-bottom: 48px; }
+    table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    table th { background: var(--surface2); border: 1px solid var(--border); padding: 12px 16px; text-align: left; font-weight: 700; letter-spacing: 0.5px; color: #666; font-family: 'Space Mono', monospace; font-size: 10px; text-transform: uppercase; }
+    table td { border: 1px solid var(--border); padding: 14px 16px; }
+    table tr:hover { background: var(--surface2); }
+    .tier-name { font-weight: 700; }
+    .tier-price { font-family: 'Space Mono', monospace; color: var(--accent); }
+    .availability-bar { background: var(--surface2); border-radius: 2px; height: 6px; width: 100%; overflow: hidden; }
+    .availability-fill { background: var(--green); height: 100%; transition: width 0.3s; }
+    .check-in-badge { display: inline-block; padding: 4px 8px; font-size: 9px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; background: var(--green); color: #000; }
+    .check-in-pending { display: inline-block; padding: 4px 8px; font-size: 9px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; background: #333; color: #777; }
+    .loading-text { font-family: 'Space Mono', monospace; font-size: 11px; letter-spacing: 3px; color: #444; padding: 40px 0; }
+    .error-text { font-family: 'Space Mono', monospace; font-size: 11px; letter-spacing: 3px; color: var(--accent); padding: 40px 0; }
+    .btn { padding: 10px 18px; font-size: 11px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; cursor: pointer; border: none; font-family: 'Google Sans Flex', sans-serif; transition: opacity 0.2s; display: inline-flex; align-items: center; gap: 6px; text-decoration: none; }
+    .btn:hover { opacity: 0.85; }
+    .btn-secondary { background: none; border: 1px solid var(--border2); color: var(--muted); }
+    .btn-secondary:hover { border-color: #555; color: var(--white); opacity: 1; }
+    @media (max-width: 768px) { nav { padding: 16px 20px; } .page-header { padding: 28px 20px 20px; flex-direction: column; gap: 16px; align-items: flex-start; } .admin-section { padding: 24px 20px 60px; } .stats-grid { grid-template-columns: 1fr; } table { font-size: 11px; } table th, table td { padding: 10px 12px; } }
+  </style>
+</head>
+<body>
+  <nav>
+    <a class="nav-logo" href="/events">COLECTIVO</a>
+    <div class="nav-right">
+      <span class="nav-user" id="nav-user"></span>
+      <button class="nav-logout" onclick="logout()">Salir →</button>
+    </div>
+  </nav>
+
+  <div id="main-screen">
+    <div class="page-header">
+      <div class="page-header-left">
+        <button class="page-header-back" onclick="history.back()">← Volver</button>
+        <div class="page-header-info">
+          <h1 id="event-name">Cargando...</h1>
+          <div class="page-header-date" id="event-date"></div>
+        </div>
+      </div>
+    </div>
+    <div class="admin-section">
+      <div id="stats-container">
+        <div class="loading-text">Cargando datos...</div>
+      </div>
+      <div id="tiers-container"></div>
+      <div id="registrations-container"></div>
+    </div>
+  </div>
+
+  <script>
+    const API = 'https://api.colectivo.live';
+    const token = localStorage.getItem('cl_token');
+    const userStr = localStorage.getItem('cl_user');
+    const user = userStr ? JSON.parse(userStr) : null;
+
+    if (!token) window.location.href = '/login';
+
+    if (user?.email) document.getElementById('nav-user').textContent = user.email;
+
+    function logout() {
+      localStorage.removeItem('cl_token');
+      localStorage.removeItem('cl_user');
+      window.location.href = '/login';
+    }
+
+    function getSlug() {
+      return new URLSearchParams(window.location.search).get('slug');
+    }
+
+    function formatDate(dateStr) {
+      if (!dateStr) return 'Sin fecha';
+      const date = new Date(dateStr);
+      return date.toLocaleDateString('es-ES', { 
+        year: 'numeric', 
+        month: 'long', 
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+    }
+
+    function formatCurrency(value) {
+      return `$${value.toLocaleString('es-MX', { maximumFractionDigits: 0 })} MXN`;
+    }
+
+    async function init() {
+      const slug = getSlug();
+      if (!slug) {
+        document.getElementById('stats-container').innerHTML = '<div class="error-text">Slug no proporcionado.</div>';
+        return;
+      }
+
+      // Verify token
+      const meRes = await fetch(`${API}/auth/me`, { headers: { Authorization: `Bearer ${token}` } });
+      if (!meRes.ok) { logout(); return; }
+
+      // Load stats
+      const statsRes = await fetch(`${API}/v2/admin/events/${slug}/stats`, { headers: { Authorization: `Bearer ${token}` } });
+      if (!statsRes.ok) {
+        document.getElementById('stats-container').innerHTML = '<div class="error-text">Error al cargar datos del evento.</div>';
+        return;
+      }
+      const stats = await statsRes.json();
+      renderAdmin(stats);
+    }
+
+    function renderAdmin(stats) {
+      // Header
+      document.getElementById('event-name').textContent = stats.event.name || 'Evento';
+      document.getElementById('event-date').textContent = formatDate(stats.event.date);
+
+      // Stats cards
+      const ticketsSold = stats.tiers.reduce((sum, t) => sum + (t.sold || 0), 0);
+      const revenue = stats.tiers.reduce((sum, t) => sum + ((t.sold || 0) * (t.price || 0)), 0);
+      const totalCapacity = stats.tiers.reduce((sum, t) => sum + (t.capacity || 0), 0);
+      const fillRate = totalCapacity > 0 ? Math.round((ticketsSold / totalCapacity) * 100) : 0;
+
+      const statsHtml = `
+        <div class="stats-grid">
+          <div class="stat-card">
+            <div class="stat-card-label">Boletos vendidos</div>
+            <div class="stat-card-value">${ticketsSold}</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-card-label">Ingresos</div>
+            <div class="stat-card-value">${formatCurrency(revenue)}</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-card-label">Capacidad total</div>
+            <div class="stat-card-value">${totalCapacity}</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-card-label">Ocupación</div>
+            <div class="stat-card-value">${fillRate}%</div>
+          </div>
+        </div>
+      `;
+      document.getElementById('stats-container').innerHTML = statsHtml;
+
+      // Tier breakdown table
+      if (stats.tiers && stats.tiers.length > 0) {
+        const tiersHtml = `
+          <h2 class="section-title">Desglose por tipo</h2>
+          <div class="table-wrapper">
+            <table>
+              <thead>
+                <tr>
+                  <th>Tipo</th>
+                  <th>Precio</th>
+                  <th>Vendidos</th>
+                  <th>Capacidad</th>
+                  <th>Ingresos</th>
+                  <th>Disponibilidad</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${stats.tiers.map(t => {
+                  const tierRevenue = (t.sold || 0) * (t.price || 0);
+                  const tierCapacity = t.capacity || 0;
+                  const tierFillRate = tierCapacity > 0 ? Math.round(((t.sold || 0) / tierCapacity) * 100) : 0;
+                  return `
+                    <tr>
+                      <td><span class="tier-name">${t.name || 'Sin nombre'}</span></td>
+                      <td><span class="tier-price">${formatCurrency(t.price || 0)}</span></td>
+                      <td>${t.sold || 0}</td>
+                      <td>${tierCapacity}</td>
+                      <td>${formatCurrency(tierRevenue)}</td>
+                      <td>
+                        <div class="availability-bar">
+                          <div class="availability-fill" style="width: ${tierFillRate}%"></div>
+                        </div>
+                        <div style="font-size: 9px; color: #555; margin-top: 4px;">${tierFillRate}%</div>
+                      </td>
+                    </tr>
+                  `;
+                }).join('')}
+              </tbody>
+            </table>
+          </div>
+        `;
+        document.getElementById('tiers-container').innerHTML = tiersHtml;
+      }
+
+      // Registrations table
+      if (stats.registrations && stats.registrations.length > 0) {
+        const registrationsHtml = `
+          <h2 class="section-title">Registros</h2>
+          <div class="table-wrapper">
+            <table>
+              <thead>
+                <tr>
+                  <th>Nombre</th>
+                  <th>Email</th>
+                  <th>Tipo</th>
+                  <th>Fecha</th>
+                  <th>Check-in</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${stats.registrations.map(r => `
+                  <tr>
+                    <td>${r.name || '-'}</td>
+                    <td style="font-family: 'Space Mono', monospace; font-size: 11px;">${r.email || '-'}</td>
+                    <td>${r.type || '-'}</td>
+                    <td style="font-size: 11px;">${formatDate(r.date)}</td>
+                    <td>${r.checked_in ? '<span class="check-in-badge">Confirmado</span>' : '<span class="check-in-pending">Pendiente</span>'}</td>
+                  </tr>
+                `).join('')}
+              </tbody>
+            </table>
+          </div>
+        `;
+        document.getElementById('registrations-container').innerHTML = registrationsHtml;
+      } else {
+        document.getElementById('registrations-container').innerHTML = '<h2 class="section-title">Registros</h2><div class="loading-text">Sin registros aún.</div>';
+      }
+    }
+
+    init();
+  </script>
+</body>
+</html>
