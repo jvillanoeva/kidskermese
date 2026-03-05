@@ -157,8 +157,11 @@ app.post('/auth/invite', requireAuth, requireSuperAdmin, async (req, res) => {
   const { email } = req.body;
   if (!email) return res.status(400).json({ error: 'Email requerido.' });
 
-  const { data, error } = await supabase.auth.admin.inviteUserByEmail(email, {
-    redirectTo: 'https://colectivo.live/set-password'
+  // Generate invite link — we send our own email via Resend instead of Supabase default
+  const { data: linkData, error } = await supabase.auth.admin.generateLink({
+    type: 'invite',
+    email,
+    options: { redirectTo: 'https://colectivo.live/set-password' }
   });
 
   if (error) {
@@ -170,6 +173,60 @@ app.post('/auth/invite', requireAuth, requireSuperAdmin, async (req, res) => {
         ? 'Este correo ya tiene una cuenta en Colectivo.'
         : `Error: ${error.message || 'desconocido'}`;
     return res.status(500).json({ error: msg });
+  }
+
+  const inviteUrl = linkData.properties.action_link;
+
+  try {
+    await resend.emails.send({
+      from: process.env.RESEND_FROM_EMAIL,
+      to: email,
+      subject: 'Te invitaron a Colectivo — Activa tu cuenta',
+      html: `<!DOCTYPE html>
+<html lang="es">
+<head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/></head>
+<body style="margin:0;padding:0;background:#080808;font-family:monospace,sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#080808;padding:48px 0;">
+    <tr><td align="center">
+      <table width="520" cellpadding="0" cellspacing="0" style="max-width:520px;width:100%;">
+        <tr><td style="padding:0 0 40px;text-align:center;">
+          <span style="font-family:monospace;font-size:13px;font-weight:700;letter-spacing:6px;color:#f5f0e8;">COLECTIVO</span>
+        </td></tr>
+        <tr><td style="background:#111111;border:1px solid #222222;padding:48px 40px;">
+          <p style="margin:0 0 6px;font-family:monospace;font-size:10px;letter-spacing:4px;color:#FF3B1F;text-transform:uppercase;">// Invitación</p>
+          <h1 style="margin:0 0 20px;font-family:monospace;font-size:28px;font-weight:700;letter-spacing:-1px;color:#f5f0e8;line-height:1.1;">BIENVENIDO<br/>A COLECTIVO</h1>
+          <p style="margin:0 0 32px;font-family:monospace;font-size:13px;color:#888888;line-height:1.8;">
+            Fuiste invitado a unirte a la plataforma de Colectivo como promotor.<br/>
+            Haz clic en el botón para crear tu contraseña y activar tu cuenta.
+          </p>
+          <table width="100%" cellpadding="0" cellspacing="0">
+            <tr><td align="center" style="padding:0 0 32px;">
+              <a href="${inviteUrl}" style="display:inline-block;background:#FF3B1F;color:#ffffff;font-family:monospace;font-size:12px;font-weight:700;letter-spacing:3px;text-transform:uppercase;text-decoration:none;padding:16px 36px;">
+                ACTIVAR CUENTA →
+              </a>
+            </td></tr>
+          </table>
+          <table width="100%" cellpadding="0" cellspacing="0"><tr><td style="border-top:1px solid #222222;padding-top:24px;">
+            <p style="margin:0;font-family:monospace;font-size:10px;color:#444444;line-height:1.7;">
+              Si no solicitaste esta invitación, puedes ignorar este correo.<br/>
+              El enlace expira en 24 horas.
+            </p>
+          </td></tr></table>
+        </td></tr>
+        <tr><td style="padding:24px 0 0;text-align:center;">
+          <p style="margin:0;font-family:monospace;font-size:9px;letter-spacing:3px;color:#333333;text-transform:uppercase;">
+            ACCESO POR INVITACIÓN · COLECTIVO.LIVE
+          </p>
+        </td></tr>
+      </table>
+    </td></tr>
+  </table>
+</body>
+</html>`
+    });
+  } catch (emailErr) {
+    console.error('Resend invite error:', emailErr);
+    return res.status(500).json({ error: 'Error al enviar el correo de invitación.' });
   }
 
   return res.status(200).json({ success: true, email });
