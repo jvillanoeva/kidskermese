@@ -6,204 +6,64 @@
   <title>Eventos — Colectivo</title>
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Google+Sans+Flex&family=Space+Mono:wght@400;700&display=swap');
-
     * { box-sizing: border-box; margin: 0; padding: 0; }
-
     :root {
-      --black: #080808;
-      --surface: #111;
-      --surface2: #1a1a1a;
-      --border: #222;
-      --border2: #2a2a2a;
-      --white: #f5f0e8;
-      --muted: #888;
-      --accent: #FF3B1F;
-      --yellow: #F5E642;
-      --green: #27ae60;
+      --black: #080808; --surface: #111; --surface2: #1a1a1a;
+      --border: #222; --border2: #2a2a2a; --white: #f5f0e8;
+      --muted: #888; --accent: #FF3B1F; --yellow: #F5E642; --green: #27ae60;
     }
-
-    body {
-      font-family: 'Google Sans Flex', sans-serif;
-      background: var(--black);
-      color: var(--white);
-      min-height: 100vh;
-    }
-
-    nav {
-      padding: 20px 40px;
-      display: flex; justify-content: space-between; align-items: center;
-      border-bottom: 1px solid var(--border);
-      position: sticky; top: 0; background: var(--black); z-index: 50;
-    }
-    .nav-logo {
-      font-family: 'Space Mono', monospace;
-      font-weight: 700; font-size: 14px; letter-spacing: 4px;
-      color: var(--white); text-decoration: none; opacity: 0.5;
-    }
-    .nav-right {
-      font-family: 'Space Mono', monospace; font-size: 10px;
-      letter-spacing: 3px; color: #444; text-transform: uppercase;
-    }
-
-    /* ── LOGIN ── */
-    #login-screen {
-      display: flex; align-items: center; justify-content: center;
-      min-height: calc(100vh - 65px); padding: 60px 24px;
-      background-image:
-        repeating-linear-gradient(0deg, transparent, transparent 39px, #111 39px, #111 40px),
-        repeating-linear-gradient(90deg, transparent, transparent 39px, #111 39px, #111 40px);
-    }
-    .login-card {
-      background: var(--surface); border: 1px solid var(--border);
-      padding: 48px 40px; max-width: 380px; width: 100%; text-align: center;
-    }
-    .login-tag {
-      font-family: 'Space Mono', monospace; font-size: 10px;
-      letter-spacing: 4px; color: var(--accent); text-transform: uppercase; margin-bottom: 16px;
-    }
-    .login-card h1 {
-      font-size: 40px; font-weight: 800; letter-spacing: -2px; color: var(--white); margin-bottom: 4px;
-    }
-    .login-card h1 span { color: var(--accent); }
-    .login-card .sub {
-      font-family: 'Space Mono', monospace; font-size: 11px;
-      letter-spacing: 2px; color: #444; text-transform: uppercase; margin-bottom: 36px;
-    }
-    .login-card input {
-      width: 100%; padding: 14px 16px;
-      background: var(--surface2); border: 1px solid var(--border);
-      font-size: 14px; color: var(--white); outline: none;
-      font-family: 'Google Sans Flex', sans-serif; margin-bottom: 12px;
-      transition: border-color 0.15s;
-    }
-    .login-card input:focus { border-color: var(--accent); }
-    .login-card input::placeholder { color: #444; }
-    .login-error {
-      font-family: 'Space Mono', monospace; font-size: 11px;
-      color: var(--accent); letter-spacing: 2px; margin-top: 12px; display: none;
-    }
-
-    /* ── MAIN ── */
-    #main-screen { display: none; }
-
-    .page-header {
-      padding: 40px 40px 28px;
-      display: flex; justify-content: space-between; align-items: flex-end;
-      border-bottom: 1px solid var(--border);
-    }
-    .page-header-left {}
-    .page-tag {
-      font-family: 'Space Mono', monospace; font-size: 10px;
-      letter-spacing: 4px; color: var(--accent); text-transform: uppercase; margin-bottom: 8px;
-    }
+    body { font-family: 'Google Sans Flex', sans-serif; background: var(--black); color: var(--white); min-height: 100vh; }
+    nav { padding: 20px 40px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); position: sticky; top: 0; background: var(--black); z-index: 50; }
+    .nav-logo { font-family: 'Space Mono', monospace; font-weight: 700; font-size: 14px; letter-spacing: 4px; color: var(--white); text-decoration: none; opacity: 0.5; }
+    .nav-right { display: flex; align-items: center; gap: 16px; }
+    .nav-user { font-family: 'Space Mono', monospace; font-size: 10px; letter-spacing: 2px; color: #444; }
+    .nav-logout { font-family: 'Space Mono', monospace; font-size: 10px; letter-spacing: 2px; color: #555; background: none; border: none; cursor: pointer; text-transform: uppercase; }
+    .nav-logout:hover { color: var(--accent); }
+    .page-header { padding: 40px 40px 28px; display: flex; justify-content: space-between; align-items: flex-end; border-bottom: 1px solid var(--border); }
+    .page-tag { font-family: 'Space Mono', monospace; font-size: 10px; letter-spacing: 4px; color: var(--accent); text-transform: uppercase; margin-bottom: 8px; }
     .page-header h1 { font-size: 40px; font-weight: 800; letter-spacing: -2px; }
-
-    /* ── EVENTS GRID ── */
     .events-section { padding: 36px 40px 80px; }
-
-    .events-grid {
-      display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-      gap: 16px; margin-top: 24px;
-    }
-    .event-card {
-      background: var(--surface); border: 1px solid var(--border);
-      padding: 24px; transition: border-color 0.15s;
-    }
+    .events-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 16px; margin-top: 24px; }
+    .event-card { background: var(--surface); border: 1px solid var(--border); padding: 24px; transition: border-color 0.15s; }
     .event-card:hover { border-color: #333; }
-
-    .event-card-tag {
-      font-family: 'Space Mono', monospace; font-size: 10px; letter-spacing: 3px;
-      color: #555; text-transform: uppercase; margin-bottom: 10px;
-      display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
-    }
-    .badge-published {
-      background: var(--green); color: #000; padding: 2px 8px;
-      font-size: 9px; letter-spacing: 2px; font-weight: 700;
-    }
-    .badge-draft {
-      background: #222; color: #555; padding: 2px 8px;
-      font-size: 9px; letter-spacing: 2px;
-    }
-    .event-card h3 {
-      font-size: 22px; font-weight: 800; letter-spacing: -0.5px; margin-bottom: 4px;
-    }
-    .event-card .event-url {
-      font-family: 'Space Mono', monospace; font-size: 10px; color: #444;
-      margin-bottom: 20px;
-    }
-    .event-card-actions { display: flex; gap: 10px; flex-wrap: wrap; }
-
-    /* ── EMPTY STATE ── */
-    .empty-state {
-      text-align: center; padding: 80px 40px; border: 1px dashed var(--border2);
-      margin-top: 24px;
-    }
+    .event-card-tag { font-family: 'Space Mono', monospace; font-size: 10px; letter-spacing: 3px; color: #555; text-transform: uppercase; margin-bottom: 10px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+    .badge-published { background: var(--green); color: #000; padding: 2px 8px; font-size: 9px; letter-spacing: 2px; font-weight: 700; }
+    .badge-draft { background: #222; color: #555; padding: 2px 8px; font-size: 9px; letter-spacing: 2px; }
+    .event-card h3 { font-size: 22px; font-weight: 800; letter-spacing: -0.5px; margin-bottom: 4px; }
+    .event-card .event-url { font-family: 'Space Mono', monospace; font-size: 10px; color: #444; margin-bottom: 20px; }
+    .event-card-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+    .empty-state { text-align: center; padding: 80px 40px; border: 1px dashed var(--border2); margin-top: 24px; }
     .empty-state .empty-icon { font-size: 40px; margin-bottom: 16px; opacity: 0.4; }
-    .empty-state h3 {
-      font-size: 20px; font-weight: 800; letter-spacing: -0.5px;
-      color: #444; margin-bottom: 8px;
-    }
+    .empty-state h3 { font-size: 20px; font-weight: 800; letter-spacing: -0.5px; color: #444; margin-bottom: 8px; }
     .empty-state p { font-size: 13px; color: #555; margin-bottom: 24px; }
-
-    /* ── BUTTONS ── */
-    .btn {
-      padding: 12px 24px; font-size: 12px; font-weight: 700;
-      letter-spacing: 2px; text-transform: uppercase; cursor: pointer;
-      border: none; font-family: 'Google Sans Flex', sans-serif;
-      transition: opacity 0.2s; display: inline-flex; align-items: center; gap: 8px;
-      text-decoration: none;
-    }
+    .btn { padding: 10px 18px; font-size: 11px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; cursor: pointer; border: none; font-family: 'Google Sans Flex', sans-serif; transition: opacity 0.2s; display: inline-flex; align-items: center; gap: 6px; text-decoration: none; }
     .btn:hover { opacity: 0.85; }
-    .btn-primary { background: var(--accent); color: white; }
+    .btn-primary { background: var(--accent); color: white; padding: 12px 24px; }
     .btn-ghost { background: none; border: 1px solid var(--border2); color: var(--muted); }
     .btn-ghost:hover { border-color: #555; color: var(--white); opacity: 1; }
-    .btn-sm { padding: 9px 16px; font-size: 11px; }
-
-    /* ── LOADING ── */
-    .loading-text {
-      font-family: 'Space Mono', monospace; font-size: 11px;
-      letter-spacing: 3px; color: #444; padding: 40px 0;
-    }
-
-    @media (max-width: 768px) {
-      nav { padding: 16px 20px; }
-      .page-header { padding: 28px 20px 20px; flex-direction: column; gap: 16px; align-items: flex-start; }
-      .events-section { padding: 24px 20px 60px; }
-      .events-grid { grid-template-columns: 1fr; }
-    }
+    .btn-admin { background: none; border: 1px solid #2a2a2a; color: #666; }
+    .btn-admin:hover { border-color: var(--accent); color: var(--accent); opacity: 1; }
+    .loading-text { font-family: 'Space Mono', monospace; font-size: 11px; letter-spacing: 3px; color: #444; padding: 40px 0; }
+    @media (max-width: 768px) { nav { padding: 16px 20px; } .page-header { padding: 28px 20px 20px; flex-direction: column; gap: 16px; align-items: flex-start; } .events-section { padding: 24px 20px 60px; } .events-grid { grid-template-columns: 1fr; } }
   </style>
 </head>
 <body>
-
   <nav>
-    <a class="nav-logo" href="/events.html">COLECTIVO</a>
-    <div class="nav-right">// Gestor de eventos</div>
+    <a class="nav-logo" href="/events">COLECTIVO</a>
+    <div class="nav-right">
+      <span class="nav-user" id="nav-user"></span>
+      <button class="nav-logout" onclick="logout()">Salir →</button>
+    </div>
   </nav>
 
-  <!-- LOGIN -->
-  <div id="login-screen">
-    <div class="login-card">
-      <div class="login-tag">// Área de promotores</div>
-      <h1>COLEC<span>TIVO</span></h1>
-      <p class="sub">Gestor de eventos</p>
-      <input type="password" id="pw" placeholder="Contraseña" />
-      <button class="btn btn-primary" style="width:100%;padding:14px;justify-content:center;" onclick="doLogin()">
-        Entrar →
-      </button>
-      <p class="login-error" id="login-error">Contraseña incorrecta</p>
-    </div>
-  </div>
-
-  <!-- MAIN -->
   <div id="main-screen">
     <div class="page-header">
-      <div class="page-header-left">
+      <div>
         <div class="page-tag">// Tus eventos</div>
         <h1>EVENTOS</h1>
       </div>
-      <a class="btn btn-primary" href="/create-event.html" id="btn-new">+ Nuevo evento</a>
+      <a class="btn btn-primary" href="/create-event">+ Nuevo evento</a>
     </div>
-
     <div class="events-section">
       <div id="events-grid"><div class="loading-text">Cargando eventos...</div></div>
     </div>
@@ -211,78 +71,57 @@
 
   <script>
     const API = 'https://api.colectivo.live';
-    let savedPassword = sessionStorage.getItem('colectivo_pw') || '';
+    const token = localStorage.getItem('cl_token');
+    const userStr = localStorage.getItem('cl_user');
+    const user = userStr ? JSON.parse(userStr) : null;
 
-    // Auto-login if password saved in session
-    if (savedPassword) attemptLogin(savedPassword);
+    if (!token) window.location.href = '/login';
 
-    document.getElementById('pw').addEventListener('keydown', e => {
-      if (e.key === 'Enter') doLogin();
-    });
+    if (user?.email) document.getElementById('nav-user').textContent = user.email;
 
-    function doLogin() {
-      const pw = document.getElementById('pw').value;
-      if (!pw) return;
-      attemptLogin(pw);
+    function logout() {
+      localStorage.removeItem('cl_token');
+      localStorage.removeItem('cl_user');
+      window.location.href = '/login';
     }
 
-    async function attemptLogin(pw) {
-      const r = await fetch(`${API}/admin/events?password=${encodeURIComponent(pw)}`);
-      if (r.status === 401) {
-        document.getElementById('login-error').style.display = 'block';
-        sessionStorage.removeItem('colectivo_pw');
-        return;
-      }
-      savedPassword = pw;
-      sessionStorage.setItem('colectivo_pw', pw);
+    async function init() {
+      // Verify token
+      const meRes = await fetch(`${API}/auth/me`, { headers: { Authorization: `Bearer ${token}` } });
+      if (!meRes.ok) { logout(); return; }
 
-      // Pass password to create-event.html via sessionStorage
-      const data = await r.json();
-      document.getElementById('login-screen').style.display = 'none';
-      document.getElementById('main-screen').style.display = 'block';
-
-      // Append pw to "new event" link
-      document.getElementById('btn-new').href = `/create-event.html`;
-
+      // Load events
+      const res = await fetch(`${API}/v2/admin/events`, { headers: { Authorization: `Bearer ${token}` } });
+      if (!res.ok) { document.getElementById('events-grid').innerHTML = '<div class="loading-text">Error al cargar eventos.</div>'; return; }
+      const data = await res.json();
       renderEvents(data);
     }
 
     function renderEvents(data) {
       const grid = document.getElementById('events-grid');
-
       if (!Array.isArray(data) || data.length === 0) {
-        grid.innerHTML = `
-          <div class="empty-state">
-            <div class="empty-icon">🎟️</div>
-            <h3>Sin eventos todavía</h3>
-            <p>Crea tu primer evento y empieza a vender boletos.</p>
-            <a class="btn btn-primary" href="/create-event.html">+ Crear primer evento</a>
-          </div>`;
+        grid.innerHTML = `<div class="empty-state"><div class="empty-icon">🎟️</div><h3>Sin eventos todavía</h3><p>Crea tu primer evento y empieza a vender boletos.</p><a class="btn btn-primary" href="/create-event">+ Crear primer evento</a></div>`;
         return;
       }
-
-      grid.innerHTML = `<div class="events-grid">${
-        data.map(ev => `
-          <div class="event-card">
-            <div class="event-card-tag">
-              <span>${ev.date_label || 'Sin fecha'}</span>
-              ${ev.published
-                ? '<span class="badge-published">Publicado</span>'
-                : '<span class="badge-draft">Borrador</span>'}
-            </div>
-            <h3>${ev.name}</h3>
-            <div class="event-url">colectivo.live/e/${ev.slug}</div>
-            <div class="event-card-actions">
-              <a class="btn btn-ghost btn-sm" href="/create-event.html?edit=${ev.slug}">✏️ Editar</a>
-              ${ev.published
-                ? `<button class="btn btn-ghost btn-sm" onclick="window.open('https://colectivo.live/e/${ev.slug}', '_blank')">🔗 Ver página</button>`
-                : '<span class="btn btn-ghost btn-sm" style="opacity:0.4;cursor:default;">🔗 No publicado</span>'}
-            </div>
+      grid.innerHTML = `<div class="events-grid">${data.map(ev => `
+        <div class="event-card">
+          <div class="event-card-tag">
+            <span>${ev.date_label || 'Sin fecha'}</span>
+            ${ev.published ? '<span class="badge-published">Publicado</span>' : '<span class="badge-draft">Borrador</span>'}
           </div>
-        `).join('')
-      }</div>`;
+          <h3>${ev.name}</h3>
+          <div class="event-url">colectivo.live/e/${ev.slug}</div>
+          <div class="event-card-actions">
+            <a class="btn btn-ghost" href="/create-event?edit=${ev.slug}">✏️ Editar</a>
+            ${ev.published
+              ? `<button class="btn btn-ghost" onclick="window.open('https://colectivo.live/e/${ev.slug}','_blank')">🔗 Ver página</button>`
+              : '<span class="btn btn-ghost" style="opacity:0.3;cursor:default;">🔗 No publicado</span>'}
+            <a class="btn btn-admin" href="/event-admin?slug=${ev.slug}">📊 Admin</a>
+          </div>
+        </div>`).join('')}</div>`;
     }
-  </script>
 
+    init();
+  </script>
 </body>
 </html>
