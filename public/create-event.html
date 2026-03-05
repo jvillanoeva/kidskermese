@@ -371,10 +371,10 @@
 <body>
 
   <nav>
-    <a class="nav-logo" href="/events.html">COLECTIVO</a>
+    <a class="nav-logo" href="/events">COLECTIVO</a>
     <div class="nav-right">
       <span class="nav-event" id="nav-mode-label">// Gestor de eventos</span>
-      <a class="nav-back" href="/events.html">← Eventos</a>
+      <a class="nav-back" href="/events">← Eventos</a>
     </div>
   </nav>
 
@@ -717,57 +717,34 @@
 
   <script>
     const API = 'https://api.colectivo.live';
-    let savedPassword = sessionStorage.getItem('colectivo_pw') || '';
+    const token = localStorage.getItem('cl_token');
+    if (!token) window.location.href = '/login';
+    
     let editingSlug = null;
 
     const urlParams = new URLSearchParams(window.location.search);
     const editSlug = urlParams.get('edit');
 
-    // ── AUTO-LOGIN via sessionStorage ──
-    if (savedPassword) {
-      attemptAuth(savedPassword);
-    }
-
-    document.getElementById('pw').addEventListener('keydown', e => {
-      if (e.key === 'Enter') doLogin();
-    });
-
-    function doLogin() {
-      const pw = document.getElementById('pw').value;
-      if (!pw) return;
-      attemptAuth(pw);
-    }
-
-    async function attemptAuth(pw) {
-      const r = await fetch(`${API}/admin/events?password=${encodeURIComponent(pw)}`);
-      if (r.status === 401) {
-        document.getElementById('login-error').style.display = 'block';
-        sessionStorage.removeItem('colectivo_pw');
-        return;
-      }
-      savedPassword = pw;
-      sessionStorage.setItem('colectivo_pw', pw);
-      document.getElementById('login-screen').style.display = 'none';
-      document.getElementById('editor-screen').style.display = 'block';
-
-      if (editSlug) {
-        loadEventForEdit(editSlug);
-      } else {
-        // New event: start fresh with one empty tier
-        addTier();
-        document.getElementById('form-mode-tag').textContent = '// Nuevo evento';
-        document.getElementById('form-title').textContent = 'CREAR EVENTO';
-        switchPanel('panel-info');
-      }
+    // ── AUTO-LOAD EVENT ON PAGE INIT ──
+    if (editSlug) {
+      loadEventForEdit(editSlug);
+    } else {
+      // New event: start fresh with one empty tier
+      addTier();
+      document.getElementById('form-mode-tag').textContent = '// Nuevo evento';
+      document.getElementById('form-title').textContent = 'CREAR EVENTO';
+      switchPanel('panel-info');
     }
 
     function goBack() {
-      window.location.href = '/events.html';
+      window.location.href = '/events';
     }
 
     // ── EDIT EVENT ──
     async function loadEventForEdit(slug) {
-      const r = await fetch(`${API}/admin/events/${slug}?password=${encodeURIComponent(savedPassword)}`);
+      const r = await fetch(`${API}/v2/admin/events/${slug}`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
       if (!r.ok) { goBack(); return; }
       const ev = await r.json();
       editingSlug = slug;
@@ -987,7 +964,6 @@
       }
 
       const payload = {
-        password: savedPassword,
         name,
         slug,
         subtitle: document.getElementById('f-subtitle').value.trim(),
@@ -1014,14 +990,17 @@
 
       const isEdit = !!editingSlug;
       const url = isEdit
-        ? `${API}/admin/events/${editingSlug}`
-        : `${API}/admin/events`;
+        ? `${API}/v2/admin/events/${editingSlug}`
+        : `${API}/v2/admin/events`;
       const method = isEdit ? 'PUT' : 'POST';
 
       try {
         const r = await fetch(url, {
           method,
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
           body: JSON.stringify(payload)
         });
         const data = await r.json();
@@ -1034,7 +1013,7 @@
         editingSlug = data.slug;
         if (publish) {
           showToast('success', '🚀 Evento publicado con éxito.');
-          setTimeout(() => { window.location.href = '/events.html'; }, 1500);
+          setTimeout(() => { window.location.href = '/events'; }, 1500);
         } else {
           showToast('success', '💾 Borrador guardado.');
         }
@@ -1052,7 +1031,7 @@
       clearTimeout(toastTimer);
       toastTimer = setTimeout(() => { el.style.display = 'none'; }, 4000);
     }
-  </script>
+  
 
 </body>
 </html>
