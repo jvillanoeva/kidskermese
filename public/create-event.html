@@ -371,10 +371,10 @@
 <body>
 
   <nav>
-    <a class="nav-logo" href="/">COLECTIVO</a>
+    <a class="nav-logo" href="/events.html">COLECTIVO</a>
     <div class="nav-right">
       <span class="nav-event" id="nav-mode-label">// Gestor de eventos</span>
-      <a class="nav-back" href="/admin.html">← Admin</a>
+      <a class="nav-back" href="/events.html">← Eventos</a>
     </div>
   </nav>
 
@@ -393,31 +393,15 @@
   <!-- EDITOR -->
   <div id="editor-screen">
 
-    <!-- Events list view -->
-    <div id="events-list-view">
-      <div class="events-list-header">
-        <div>
-          <div class="panel-title">// Tus eventos</div>
-          <h2>EVENTOS</h2>
-        </div>
-        <button class="btn btn-primary" onclick="showNewForm()">+ Nuevo evento</button>
-      </div>
-      <div class="events-grid" id="events-grid">
-        <div style="color:#555;font-family:'Space Mono',monospace;font-size:12px;padding:20px 0;">
-          Cargando eventos...
-        </div>
-      </div>
-    </div>
-
     <!-- Form view -->
-    <div id="form-view" style="display:none;">
+    <div id="form-view">
       <div class="editor-header">
         <div class="editor-header-left">
           <div class="editor-mode-tag" id="form-mode-tag">// Nuevo evento</div>
           <h1 id="form-title">CREAR EVENTO</h1>
         </div>
         <div class="editor-header-actions">
-          <button class="btn btn-ghost btn-sm" onclick="showEventsList()">← Volver</button>
+          <button class="btn btn-ghost btn-sm" onclick="goBack()">← Eventos</button>
           <button class="btn btn-ghost btn-sm" onclick="saveEvent(false)" id="btn-save-draft">Guardar borrador</button>
           <button class="btn btn-yellow btn-sm" onclick="saveEvent(true)" id="btn-publish">Publicar evento →</button>
         </div>
@@ -733,87 +717,62 @@
 
   <script>
     const API = 'https://api.colectivo.live';
-    let savedPassword = '';
-    let editingSlug = null; // null = new event
+    let savedPassword = sessionStorage.getItem('colectivo_pw') || '';
+    let editingSlug = null;
 
-    // ── LOGIN ──
+    const urlParams = new URLSearchParams(window.location.search);
+    const editSlug = urlParams.get('edit');
+
+    // ── AUTO-LOGIN via sessionStorage ──
+    if (savedPassword) {
+      attemptAuth(savedPassword);
+    }
+
     document.getElementById('pw').addEventListener('keydown', e => {
       if (e.key === 'Enter') doLogin();
     });
 
-    async function doLogin() {
+    function doLogin() {
       const pw = document.getElementById('pw').value;
       if (!pw) return;
-      // Quick validation: try to load events list
+      attemptAuth(pw);
+    }
+
+    async function attemptAuth(pw) {
       const r = await fetch(`${API}/admin/events?password=${encodeURIComponent(pw)}`);
       if (r.status === 401) {
         document.getElementById('login-error').style.display = 'block';
+        sessionStorage.removeItem('colectivo_pw');
         return;
       }
       savedPassword = pw;
+      sessionStorage.setItem('colectivo_pw', pw);
       document.getElementById('login-screen').style.display = 'none';
       document.getElementById('editor-screen').style.display = 'block';
-      loadEventsList();
-      // Check if URL has ?edit=slug
-      const params = new URLSearchParams(window.location.search);
-      const editSlug = params.get('edit');
-      if (editSlug) loadEventForEdit(editSlug);
-    }
 
-    // ── EVENTS LIST ──
-    async function loadEventsList() {
-      const r = await fetch(`${API}/admin/events?password=${encodeURIComponent(savedPassword)}`);
-      const data = await r.json();
-      const grid = document.getElementById('events-grid');
-      if (!data.length) {
-        grid.innerHTML = '<div style="color:#555;font-family:\'Space Mono\',monospace;font-size:12px;padding:20px 0;">Sin eventos todavía. ¡Crea el primero!</div>';
-        return;
+      if (editSlug) {
+        loadEventForEdit(editSlug);
+      } else {
+        // New event: start fresh with one empty tier
+        addTier();
+        document.getElementById('form-mode-tag').textContent = '// Nuevo evento';
+        document.getElementById('form-title').textContent = 'CREAR EVENTO';
+        switchPanel('panel-info');
       }
-      grid.innerHTML = data.map(ev => `
-        <div class="event-card">
-          <div class="event-card-tag">
-            <span>${ev.date_label || 'Sin fecha'}</span>
-            ${ev.published
-              ? '<span class="badge-published">Publicado</span>'
-              : '<span class="badge-draft">Borrador</span>'}
-          </div>
-          <h3>${ev.name}</h3>
-          <div class="event-slug">/${ev.slug}</div>
-          <div class="event-card-actions">
-            <button class="btn btn-ghost btn-sm" onclick="loadEventForEdit('${ev.slug}')">✏️ Editar</button>
-            <button class="btn btn-ghost btn-sm" onclick="window.open('https://colectivo.live/e/' + ev.slug, '_blank')">🔗 Ver página</button>
-          </div>
-        </div>
-      `).join('');
     }
 
-    function showEventsList() {
-      document.getElementById('events-list-view').style.display = 'block';
-      document.getElementById('form-view').style.display = 'none';
-      editingSlug = null;
-      loadEventsList();
-    }
-
-    function showNewForm() {
-      editingSlug = null;
-      clearForm();
-      addTier(); // default: 1 tier
-      document.getElementById('events-list-view').style.display = 'none';
-      document.getElementById('form-view').style.display = 'block';
-      document.getElementById('form-mode-tag').textContent = '// Nuevo evento';
-      document.getElementById('form-title').textContent = 'CREAR EVENTO';
-      switchPanel('panel-info');
+    function goBack() {
+      window.location.href = '/events.html';
     }
 
     // ── EDIT EVENT ──
     async function loadEventForEdit(slug) {
       const r = await fetch(`${API}/admin/events/${slug}?password=${encodeURIComponent(savedPassword)}`);
+      if (!r.ok) { goBack(); return; }
       const ev = await r.json();
       editingSlug = slug;
       clearForm();
       populateForm(ev);
-      document.getElementById('events-list-view').style.display = 'none';
-      document.getElementById('form-view').style.display = 'block';
       document.getElementById('form-mode-tag').textContent = '// Editando evento';
       document.getElementById('form-title').textContent = 'EDITAR EVENTO';
       switchPanel('panel-info');
@@ -1072,14 +1031,12 @@
           return;
         }
 
-        editingSlug = data.slug; // after create, set editingSlug so subsequent saves are updates
-        showToast('success', publish ? '🚀 Evento publicado con éxito.' : '💾 Borrador guardado.');
-
+        editingSlug = data.slug;
         if (publish) {
-          setTimeout(() => {
-            switchPanel('panel-publish');
-            updatePublishSummary();
-          }, 500);
+          showToast('success', '🚀 Evento publicado con éxito.');
+          setTimeout(() => { window.location.href = '/events.html'; }, 1500);
+        } else {
+          showToast('success', '💾 Borrador guardado.');
         }
       } catch (err) {
         showToast('error', 'Error de red. Intenta de nuevo.');
