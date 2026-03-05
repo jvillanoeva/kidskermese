@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Acceso — Colectivo</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&display=swap');
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --black: #080808;
+      --surface: #111;
+      --surface2: #1a1a1a;
+      --border: #222;
+      --white: #f5f0e8;
+      --muted: #888;
+      --accent: #FF3B1F;
+    }
+
+    body {
+      font-family: 'Space Mono', monospace;
+      background: var(--black);
+      color: var(--white);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+    }
+
+    .logo {
+      font-size: 13px;
+      letter-spacing: 6px;
+      font-weight: 700;
+      color: var(--white);
+      text-decoration: none;
+      opacity: 0.4;
+      margin-bottom: 48px;
+      display: block;
+      text-align: center;
+    }
+
+    .card {
+      width: 100%;
+      max-width: 400px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      padding: 40px;
+    }
+
+    .card-tag {
+      font-size: 9px;
+      letter-spacing: 4px;
+      color: var(--accent);
+      text-transform: uppercase;
+      margin-bottom: 12px;
+    }
+
+    .card-title {
+      font-size: 24px;
+      font-weight: 700;
+      letter-spacing: -1px;
+      margin-bottom: 32px;
+      line-height: 1.1;
+    }
+
+    .field { margin-bottom: 16px; }
+
+    .field label {
+      display: block;
+      font-size: 9px;
+      letter-spacing: 3px;
+      color: var(--muted);
+      text-transform: uppercase;
+      margin-bottom: 8px;
+    }
+
+    .field input {
+      width: 100%;
+      padding: 13px 14px;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      color: var(--white);
+      font-family: 'Space Mono', monospace;
+      font-size: 13px;
+      outline: none;
+      transition: border-color 0.15s;
+    }
+
+    .field input:focus { border-color: var(--accent); }
+    .field input::placeholder { color: #333; }
+
+    .btn {
+      width: 100%;
+      margin-top: 24px;
+      padding: 15px;
+      background: var(--accent);
+      color: white;
+      border: none;
+      font-family: 'Space Mono', monospace;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      cursor: pointer;
+      transition: opacity 0.2s;
+    }
+    .btn:hover { opacity: 0.85; }
+    .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    .error {
+      margin-top: 16px;
+      padding: 12px 14px;
+      background: #1a0a08;
+      border: 1px solid var(--accent);
+      font-size: 11px;
+      color: var(--accent);
+      letter-spacing: 1px;
+      display: none;
+    }
+
+    .footer-note {
+      margin-top: 32px;
+      font-size: 9px;
+      letter-spacing: 2px;
+      color: #333;
+      text-align: center;
+      text-transform: uppercase;
+    }
+  </style>
+</head>
+<body>
+
+  <a class="logo" href="/">COLECTIVO</a>
+
+  <div class="card">
+    <div class="card-tag">// Acceso promotores</div>
+    <div class="card-title">INICIAR<br/>SESIÓN</div>
+
+    <div class="field">
+      <label>Correo electrónico</label>
+      <input type="email" id="f-email" placeholder="tu@correo.com" autocomplete="email"/>
+    </div>
+
+    <div class="field">
+      <label>Contraseña</label>
+      <input type="password" id="f-password" placeholder="••••••••" autocomplete="current-password"/>
+    </div>
+
+    <button class="btn" id="btn-login" onclick="doLogin()">Entrar →</button>
+
+    <div class="error" id="error-msg"></div>
+  </div>
+
+  <div class="footer-note">Acceso por invitación · Colectivo.live</div>
+
+  <script>
+    const API = 'https://api.colectivo.live';
+
+    // If already logged in, skip to events
+    const existing = localStorage.getItem('cl_token');
+    if (existing) {
+      fetch(`${API}/auth/me`, { headers: { Authorization: `Bearer ${existing}` } })
+        .then(r => r.ok ? window.location.href = '/events' : null)
+        .catch(() => {});
+    }
+
+    document.getElementById('f-password').addEventListener('keydown', e => {
+      if (e.key === 'Enter') doLogin();
+    });
+
+    async function doLogin() {
+      const email = document.getElementById('f-email').value.trim();
+      const password = document.getElementById('f-password').value;
+      const btn = document.getElementById('btn-login');
+      const errEl = document.getElementById('error-msg');
+
+      if (!email || !password) {
+        showError('Por favor ingresa tu correo y contraseña.');
+        return;
+      }
+
+      btn.disabled = true;
+      btn.textContent = 'Verificando...';
+      errEl.style.display = 'none';
+
+      try {
+        const res = await fetch(`${API}/auth/login`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, password })
+        });
+
+        const data = await res.json();
+
+        if (!res.ok) {
+          showError(data.error || 'Error al iniciar sesión.');
+          btn.disabled = false;
+          btn.textContent = 'Entrar →';
+          return;
+        }
+
+        // Store auth in localStorage
+        localStorage.setItem('cl_token', data.token);
+        localStorage.setItem('cl_user', JSON.stringify(data.user));
+
+        window.location.href = '/events';
+
+      } catch (err) {
+        showError('Error de conexión. Intenta de nuevo.');
+        btn.disabled = false;
+        btn.textContent = 'Entrar →';
+      }
+    }
+
+    function showError(msg) {
+      const el = document.getElementById('error-msg');
+      el.textContent = msg;
+      el.style.display = 'block';
+    }
+  </script>
+
+</body>
+</html>
