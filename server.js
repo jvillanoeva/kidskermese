@@ -1,6 +1,8 @@
 require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
+const rateLimit = require('express-rate-limit');
+const crypto = require('crypto');
 const { createClient } = require('@supabase/supabase-js');
 const { Resend } = require('resend');
 const QRCode = require('qrcode');
@@ -10,8 +12,68 @@ const Stripe = require('stripe');
 const multer = require('multer');
 
 const app = express();
-app.use(cors());
+
+// ── CORS — only allow our frontend ──
+app.use(cors({
+  origin: ['https://colectivo.live', 'https://www.colectivo.live'],
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
+}));
+
+// Raw body needed for Stripe signature verification — must come before express.json()
+app.use('/confirm-payment', express.raw({ type: 'application/json' }));
 app.use(express.json());
+
+// ── RATE LIMITERS ──
+const generalLimiter = rateLimit({ windowMs: 60_000, max: 120, standardHeaders: true, legacyHeaders: false });
+const authLimiter    = rateLimit({ windowMs: 60_000, max: 10,  message: { error: 'Demasiados intentos. Espera un momento.' } });
+const scanLimiter    = rateLimit({ windowMs: 60_000, max: 60,  message: { error: 'Límite de escaneo alcanzado.' } });
+const payLimiter     = rateLimit({ windowMs: 60_000, max: 20,  message: { error: 'Demasiadas solicitudes de pago.' } });
+
+app.use(generalLimiter);
+app.use('/auth/login',    authLimiter);
+app.use('/auth/invite',   authLimiter);
+app.use('/v2/scan',       scanLimiter);
+app.use('/confirm-payment', payLimiter);
+app.use('/create-payment',  payLimiter);
+
+// ─────────────────────────────────────────────
+//  QR SIGNING HELPERS
+//  QR payload format:  ticketId|sig
+//  sig = HMAC-SHA256(ticketId + '|' + eventSlug, QR_SECRET).slice(0,24)
+//  Backward compat: plain UUIDs (no '|') are still accepted but flagged unsigned
+// ─────────────────────────────────────────────
+const QR_SECRET = process.env.QR_SECRET || 'change-me-in-production';
+
+function signTicket(ticketId, eventSlug) {
+  const sig = crypto.createHmac('sha256', QR_SECRET)
+    .update(`${ticketId}|${eventSlug}`)
+    .digest('hex')
+    .slice(0, 24);
+  return `${ticketId}|${sig}`;
+}
+
+function verifyTicket(payload, eventSlug) {
+  if (!payload.includes('|')) {
+    // Legacy unsigned QR — still valid, just unverified
+    return { ticketId: payload, signed: false };
+  }
+  const [ticketId, sig] = payload.split('|');
+  const expected = crypto.createHmac('sha256', QR_SECRET)
+    .update(`${ticketId}|${eventSlug}`)
+    .digest('hex')
+    .slice(0, 24);
+  const valid = crypto.timingSafeEqual(Buffer.from(sig), Buffer.from(expected));
+  return { ticketId, signed: true, valid };
+}
+
+// Scan token — deterministic per slug, no DB needed
+function makeScanToken(slug) {
+  return crypto.createHmac('sha256', QR_SECRET)
+    .update(`scan:${slug}`)
+    .digest('hex')
+    .slice(0, 32);
+}
 
 // ── Root → redirect to Colectivo login ──
 app.get('/', (req, res) => {
@@ -437,11 +499,13 @@ app.post('/confirm-payment', async (req, res) => {
     const attachments = [];
     const insertRows = [];
 
+    const finalSlug = event_slug || 'caballeros-aniversario';
     for (let i = 0; i < ids.length; i++) {
       const ticketId = ids[i];
+      const qrPayload = signTicket(ticketId, finalSlug);
       const [qrDataURL, qrBuffer] = await Promise.all([
-        QRCode.toDataURL(ticketId, { width: 300, margin: 2, color: { dark: '#080808', light: '#ffffff' } }),
-        QRCode.toBuffer(ticketId, { width: 300, margin: 2, color: { dark: '#080808', light: '#ffffff' } })
+        QRCode.toDataURL(qrPayload, { width: 300, margin: 2, color: { dark: '#080808', light: '#ffffff' } }),
+        QRCode.toBuffer(qrPayload, { width: 300, margin: 2, color: { dark: '#080808', light: '#ffffff' } })
       ]);
 
       qrCodes.push({ id: ticketId, qrDataURL });
@@ -454,7 +518,7 @@ app.post('/confirm-payment', async (req, res) => {
         id: ticketId, name, student_name,
         email, phone: phone || null,
         payment_status: 'paid',
-        event_slug: event_slug || 'caballeros-aniversario'
+        event_slug: finalSlug
       });
     }
 
@@ -482,61 +546,12 @@ app.post('/confirm-payment', async (req, res) => {
 });
 
 // ─────────────────────────────────────────────
-//  POST /admin/resend-email
+//  RETIRED LEGACY ENDPOINTS (password-based — replaced by JWT v2 routes)
 // ─────────────────────────────────────────────
-app.post('/admin/resend-email', async (req, res) => {
-  const { email, password } = req.body;
-  if (password !== process.env.ADMIN_PASSWORD) {
-    return res.status(401).json({ error: 'No autorizado.' });
-  }
-  if (!email) return res.status(400).json({ error: 'Email requerido.' });
+const RETIRED = (req, res) =>
+  res.status(410).json({ error: 'Este endpoint fue retirado. Usa la versión v2 con JWT.' });
 
-  try {
-    const { data: registrations, error } = await supabase
-      .from('registrations')
-      .select('*')
-      .eq('email', email)
-      .eq('payment_status', 'paid')
-      .order('created_at', { ascending: true });
-
-    if (error || !registrations?.length) {
-      return res.status(404).json({ error: 'No se encontraron boletos para este correo.' });
-    }
-
-    const { name, student_name } = registrations[0];
-    const qty = registrations.length;
-    const qrCodes = [];
-    const attachments = [];
-
-    for (let i = 0; i < registrations.length; i++) {
-      const ticketId = registrations[i].id;
-      const [qrDataURL, qrBuffer] = await Promise.all([
-        QRCode.toDataURL(ticketId, { width: 300, margin: 2, color: { dark: '#080808', light: '#ffffff' } }),
-        QRCode.toBuffer(ticketId, { width: 300, margin: 2, color: { dark: '#080808', light: '#ffffff' } })
-      ]);
-      qrCodes.push({ id: ticketId, qrDataURL });
-      attachments.push({
-        filename: qty > 1 ? `ticket-${i + 1}-de-${qty}.png` : 'ticket.png',
-        content: qrBuffer,
-        contentType: 'image/png'
-      });
-    }
-
-    await resend.emails.send({
-      from: process.env.RESEND_FROM_EMAIL,
-      to: email,
-      subject: `🔁 Reenvío de accesos — ${student_name.split(' — ')[0] || 'Colectivo'}`,
-      html: buildEmailHTML({ name, student_name, qrCodes }),
-      attachments
-    });
-
-    return res.status(200).json({ success: true, qty });
-
-  } catch (err) {
-    console.error('Resend email error:', err);
-    return res.status(500).json({ error: 'Error al reenviar el email.' });
-  }
-});
+app.post('/admin/resend-email', RETIRED);
 
 // ─────────────────────────────────────────────
 //  EMAIL HTML TEMPLATE
@@ -610,59 +625,8 @@ function buildEmailHTML({ name, student_name, qrCodes }) {
   `;
 }
 
-// ─────────────────────────────────────────────
-//  GET /admin/registrations
-// ─────────────────────────────────────────────
-app.get('/admin/registrations', async (req, res) => {
-  const { password, event } = req.query;
-  if (password !== process.env.ADMIN_PASSWORD) {
-    return res.status(401).json({ error: 'No autorizado.' });
-  }
-
-  let query = supabase
-    .from('registrations')
-    .select('*')
-    .order('created_at', { ascending: false });
-
-  if (event) query = query.eq('event_slug', event);
-
-  const { data, error } = await query;
-  if (error) return res.status(500).json({ error: 'Error al obtener registros.' });
-  res.set('Cache-Control', 'no-store');
-  return res.status(200).json(data);
-});
-
-// ─────────────────────────────────────────────
-//  POST /verify
-// ─────────────────────────────────────────────
-app.post('/verify', async (req, res) => {
-  const { id, password } = req.body;
-  if (password !== process.env.ADMIN_PASSWORD) {
-    return res.status(401).json({ error: 'No autorizado.' });
-  }
-  if (!id) return res.status(400).json({ error: 'ID requerido.' });
-
-  const { data, error } = await supabase
-    .from('registrations')
-    .select('*')
-    .eq('id', id)
-    .single();
-
-  if (error || !data) {
-    return res.status(404).json({ status: 'not_found', message: 'Registro no encontrado.' });
-  }
-
-  if (data.checked_in) {
-    return res.status(200).json({ status: 'already_checked_in', message: 'Ya ingresó al evento.', registration: data });
-  }
-
-  await supabase
-    .from('registrations')
-    .update({ checked_in: true, checked_in_at: new Date().toISOString() })
-    .eq('id', id);
-
-  return res.status(200).json({ status: 'success', message: '¡Acceso válido!', registration: data });
-});
+app.get('/admin/registrations', RETIRED);
+app.post('/verify', RETIRED);
 
 // ─────────────────────────────────────────────
 //  EVENT CRUD — PUBLIC
@@ -683,95 +647,13 @@ app.get('/events/:slug', async (req, res) => {
 });
 
 // ─────────────────────────────────────────────
-//  EVENT CRUD — ADMIN (legacy password auth)
+//  EVENT CRUD — ADMIN (legacy password auth — retired)
 // ─────────────────────────────────────────────
-
-app.get('/admin/events', async (req, res) => {
-  const { password } = req.query;
-  if (password !== process.env.ADMIN_PASSWORD) {
-    return res.status(401).json({ error: 'No autorizado.' });
-  }
-  const { data, error } = await supabase
-    .from('events')
-    .select('id, slug, name, date_label, published, created_at')
-    .order('created_at', { ascending: false });
-
-  if (error) return res.status(500).json({ error: 'Error al obtener eventos.' });
-  return res.status(200).json(data);
-});
-
-app.get('/admin/events/:slug', async (req, res) => {
-  const { password } = req.query;
-  if (password !== process.env.ADMIN_PASSWORD) {
-    return res.status(401).json({ error: 'No autorizado.' });
-  }
-  const { data, error } = await supabase
-    .from('events')
-    .select('*')
-    .eq('slug', req.params.slug)
-    .single();
-
-  if (error || !data) return res.status(404).json({ error: 'Evento no encontrado.' });
-  return res.status(200).json(data);
-});
-
-app.post('/admin/events', async (req, res) => {
-  const { password, ...eventData } = req.body;
-  if (password !== process.env.ADMIN_PASSWORD) {
-    return res.status(401).json({ error: 'No autorizado.' });
-  }
-  if (!eventData.slug || !eventData.name) {
-    return res.status(400).json({ error: 'slug y name son requeridos.' });
-  }
-  eventData.slug = eventData.slug.toLowerCase().replace(/[^a-z0-9-]/g, '-');
-
-  const { data, error } = await supabase
-    .from('events')
-    .insert([eventData])
-    .select()
-    .single();
-
-  if (error) {
-    if (error.code === '23505') return res.status(409).json({ error: 'Ya existe un evento con ese slug.' });
-    return res.status(500).json({ error: 'Error al crear el evento.' });
-  }
-  return res.status(201).json(data);
-});
-
-app.put('/admin/events/:slug', async (req, res) => {
-  const { password, ...eventData } = req.body;
-  if (password !== process.env.ADMIN_PASSWORD) {
-    return res.status(401).json({ error: 'No autorizado.' });
-  }
-  delete eventData.slug;
-  delete eventData.id;
-  delete eventData.created_at;
-
-  const { data, error } = await supabase
-    .from('events')
-    .update(eventData)
-    .eq('slug', req.params.slug)
-    .select()
-    .single();
-
-  if (error) return res.status(500).json({ error: 'Error al actualizar el evento.' });
-  if (!data) return res.status(404).json({ error: 'Evento no encontrado.' });
-  return res.status(200).json(data);
-});
-
-app.delete('/admin/events/:slug', async (req, res) => {
-  const { password } = req.body;
-  if (password !== process.env.ADMIN_PASSWORD) {
-    return res.status(401).json({ error: 'No autorizado.' });
-  }
-  const { error } = await supabase
-    .from('events')
-    .update({ published: false })
-    .eq('slug', req.params.slug);
-
-  if (error) return res.status(500).json({ error: 'Error al eliminar el evento.' });
-  return res.status(200).json({ success: true });
-});
+app.get('/admin/events',         RETIRED);
+app.get('/admin/events/:slug',   RETIRED);
+app.post('/admin/events',        RETIRED);
+app.put('/admin/events/:slug',   RETIRED);
+app.delete('/admin/events/:slug', RETIRED);
 
 // ─────────────────────────────────────────────
 //  EVENT CRUD — v2 (JWT auth)
@@ -900,6 +782,7 @@ app.get('/v2/admin/events/:slug/stats', requireAuth, async (req, res) => {
       fillRate: totalCapacity > 0 ? Math.round((totalSold / totalCapacity) * 100) : 0
     },
     tiers: tierStats,
+    scanToken: makeScanToken(slug),
     registrations: regs.map(r => ({
       id: r.id, name: r.name, email: r.email,
       phone: r.phone, student_name: r.student_name,
@@ -910,22 +793,48 @@ app.get('/v2/admin/events/:slug/stats', requireAuth, async (req, res) => {
 });
 
 // ─────────────────────────────────────────────
-//  POST /v2/scan/:slug/verify  (no auth — door scanner)
+//  GET /v2/scan/:slug/info  (no auth — returns event name for scanner UI)
+// ─────────────────────────────────────────────
+app.get('/v2/scan/:slug/info', async (req, res) => {
+  const { slug } = req.params;
+  const { data, error } = await supabase
+    .from('events')
+    .select('slug, name, date_label, venue')
+    .eq('slug', slug)
+    .single();
+
+  if (error || !data) return res.status(404).json({ error: 'Evento no encontrado.' });
+  return res.status(200).json(data);
+});
+
+// ─────────────────────────────────────────────
+//  POST /v2/scan/:slug/verify  (scan token required — door scanner)
 // ─────────────────────────────────────────────
 app.post('/v2/scan/:slug/verify', async (req, res) => {
   const { slug } = req.params;
-  const { id, station } = req.body;
+  const { id, station, token } = req.body;
   if (!id) return res.status(400).json({ error: 'ID requerido.' });
 
-  // Fetch the registration
+  // Validate scan token (generated per-slug in makeScanToken)
+  if (!token || token !== makeScanToken(slug)) {
+    return res.status(401).json({ status: 'not_found', message: 'Token de escaneo inválido.' });
+  }
+
+  // Verify HMAC signature — backward-compatible with legacy plain UUIDs
+  const { ticketId, signed, valid } = verifyTicket(id, slug);
+  if (signed && !valid) {
+    return res.status(200).json({ status: 'not_found', message: 'QR inválido o manipulado.' });
+  }
+
+  // Fetch the registration using the extracted (clean) ticketId
   const { data, error } = await supabase
     .from('registrations')
     .select('*')
-    .eq('id', id)
+    .eq('id', ticketId)
     .single();
 
   if (error || !data) {
-    return res.status(404).json({ status: 'not_found', message: 'Boleto no encontrado.' });
+    return res.status(200).json({ status: 'not_found', message: 'Boleto no encontrado.' });
   }
 
   // Confirm this ticket belongs to the correct event
@@ -939,8 +848,8 @@ app.post('/v2/scan/:slug/verify', async (req, res) => {
 
   await supabase
     .from('registrations')
-    .update({ checked_in: true, checked_in_at: new Date().toISOString() })
-    .eq('id', id);
+    .update({ checked_in: true, checked_in_at: new Date().toISOString(), station: station || null })
+    .eq('id', ticketId);
 
   return res.status(200).json({ status: 'success', message: '¡Acceso válido!', registration: data });
 });
@@ -992,9 +901,10 @@ app.post('/v2/admin/events/:slug/resend-email', requireAuth, async (req, res) =>
 
     for (let i = 0; i < registrations.length; i++) {
       const ticketId = registrations[i].id;
+      const qrPayload = signTicket(ticketId, slug);
       const [qrDataURL, qrBuffer] = await Promise.all([
-        QRCode.toDataURL(ticketId, { width: 300, margin: 2, color: { dark: '#080808', light: '#ffffff' } }),
-        QRCode.toBuffer(ticketId, { width: 300, margin: 2, color: { dark: '#080808', light: '#ffffff' } })
+        QRCode.toDataURL(qrPayload, { width: 300, margin: 2, color: { dark: '#080808', light: '#ffffff' } }),
+        QRCode.toBuffer(qrPayload, { width: 300, margin: 2, color: { dark: '#080808', light: '#ffffff' } })
       ]);
       qrCodes.push({ id: ticketId, qrDataURL });
       attachments.push({
