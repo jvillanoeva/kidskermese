@@ -7,6 +7,7 @@ const QRCode = require('qrcode');
 const { v4: uuidv4 } = require('uuid');
 const path = require('path');
 const Stripe = require('stripe');
+const multer = require('multer');
 
 const app = express();
 app.use(cors());
@@ -149,6 +150,32 @@ app.post('/auth/set-password', async (req, res) => {
     console.error('Set password error:', err);
     return res.status(500).json({ error: 'Error interno.' });
   }
+});
+
+// POST /upload — upload image to Supabase Storage, returns public URL
+const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 8 * 1024 * 1024 } });
+app.post('/upload', requireAuth, upload.single('file'), async (req, res) => {
+  if (!req.file) return res.status(400).json({ error: 'No se recibió ningún archivo.' });
+
+  const allowed = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
+  if (!allowed.includes(req.file.mimetype)) {
+    return res.status(400).json({ error: 'Solo se permiten imágenes JPG, PNG, WEBP o GIF.' });
+  }
+
+  const ext = req.file.originalname.split('.').pop().toLowerCase();
+  const filename = `${req.user.id}/${Date.now()}-${uuidv4().slice(0, 8)}.${ext}`;
+
+  const { error } = await supabase.storage
+    .from('event-images')
+    .upload(filename, req.file.buffer, { contentType: req.file.mimetype, upsert: false });
+
+  if (error) {
+    console.error('Storage upload error:', error);
+    return res.status(500).json({ error: 'Error al subir la imagen.' });
+  }
+
+  const { data: { publicUrl } } = supabase.storage.from('event-images').getPublicUrl(filename);
+  return res.json({ url: publicUrl });
 });
 
 // POST /auth/invite — superadmin invites a new promoter
