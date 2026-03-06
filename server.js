@@ -844,10 +844,15 @@ app.post('/v2/scan/:slug/verify', async (req, res) => {
     return res.status(200).json({ status: 'already_checked_in', message: 'Ya ingresó al evento.', registration: data });
   }
 
-  await supabase
+  const { error: updateError } = await supabase
     .from('registrations')
-    .update({ checked_in: true, checked_in_at: new Date().toISOString(), station: station || null })
+    .update({ checked_in: true, checked_in_at: new Date().toISOString() })
     .eq('id', ticketId);
+
+  if (updateError) {
+    console.error('Check-in update error:', updateError);
+    return res.status(500).json({ status: 'error', message: 'Error al registrar el ingreso.' });
+  }
 
   return res.status(200).json({ status: 'success', message: '¡Acceso válido!', registration: data });
 });
