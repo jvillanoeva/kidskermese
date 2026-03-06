@@ -910,6 +910,70 @@ app.get('/v2/admin/events/:slug/stats', requireAuth, async (req, res) => {
 });
 
 // ─────────────────────────────────────────────
+//  POST /v2/admin/events/:slug/resend-email
+// ─────────────────────────────────────────────
+app.post('/v2/admin/events/:slug/resend-email', requireAuth, async (req, res) => {
+  const { slug } = req.params;
+  const { email } = req.body;
+  if (!email) return res.status(400).json({ error: 'Email requerido.' });
+
+  // Verify the event belongs to this user (or user is superadmin)
+  let evQuery = supabase.from('events').select('id, name').eq('slug', slug);
+  if (req.user.role !== 'superadmin') {
+    evQuery = evQuery.eq('user_id', req.user.id);
+  }
+  const { data: event, error: evErr } = await evQuery.single();
+  if (evErr || !event) return res.status(404).json({ error: 'Evento no encontrado.' });
+
+  try {
+    const { data: registrations, error } = await supabase
+      .from('registrations')
+      .select('*')
+      .eq('email', email)
+      .eq('event_slug', slug)
+      .eq('payment_status', 'paid')
+      .order('created_at', { ascending: true });
+
+    if (error || !registrations?.length) {
+      return res.status(404).json({ error: 'No se encontraron boletos para este correo en este evento.' });
+    }
+
+    const { name, student_name } = registrations[0];
+    const qty = registrations.length;
+    const qrCodes = [];
+    const attachments = [];
+
+    for (let i = 0; i < registrations.length; i++) {
+      const ticketId = registrations[i].id;
+      const [qrDataURL, qrBuffer] = await Promise.all([
+        QRCode.toDataURL(ticketId, { width: 300, margin: 2, color: { dark: '#080808', light: '#ffffff' } }),
+        QRCode.toBuffer(ticketId, { width: 300, margin: 2, color: { dark: '#080808', light: '#ffffff' } })
+      ]);
+      qrCodes.push({ id: ticketId, qrDataURL });
+      attachments.push({
+        filename: qty > 1 ? `ticket-${i + 1}-de-${qty}.png` : 'ticket.png',
+        content: qrBuffer,
+        contentType: 'image/png'
+      });
+    }
+
+    await resend.emails.send({
+      from: process.env.RESEND_FROM_EMAIL,
+      to: email,
+      subject: `🔁 Reenvío de accesos — ${(student_name || '').split(' — ')[0] || 'Colectivo'}`,
+      html: buildEmailHTML({ name, student_name, qrCodes }),
+      attachments
+    });
+
+    return res.status(200).json({ success: true, qty });
+
+  } catch (err) {
+    console.error('Resend email error:', err);
+    return res.status(500).json({ error: 'Error al reenviar el email.' });
+  }
+});
+
+// ─────────────────────────────────────────────
 //  START SERVER
 // ─────────────────────────────────────────────
 const PORT = process.env.PORT || 3000;
