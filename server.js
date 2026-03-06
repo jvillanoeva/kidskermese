@@ -20,8 +20,6 @@ app.use(cors({
   allowedHeaders: ['Content-Type', 'Authorization']
 }));
 
-// Raw body needed for Stripe signature verification — must come before express.json()
-app.use('/confirm-payment', express.raw({ type: 'application/json' }));
 app.use(express.json());
 
 // ── RATE LIMITERS ──
