@@ -910,11 +910,47 @@ app.get('/v2/admin/events/:slug/stats', requireAuth, async (req, res) => {
 });
 
 // ─────────────────────────────────────────────
+//  POST /v2/scan/:slug/verify  (no auth — door scanner)
+// ─────────────────────────────────────────────
+app.post('/v2/scan/:slug/verify', async (req, res) => {
+  const { slug } = req.params;
+  const { id, station } = req.body;
+  if (!id) return res.status(400).json({ error: 'ID requerido.' });
+
+  // Fetch the registration
+  const { data, error } = await supabase
+    .from('registrations')
+    .select('*')
+    .eq('id', id)
+    .single();
+
+  if (error || !data) {
+    return res.status(404).json({ status: 'not_found', message: 'Boleto no encontrado.' });
+  }
+
+  // Confirm this ticket belongs to the correct event
+  if (data.event_slug && data.event_slug !== slug) {
+    return res.status(200).json({ status: 'wrong_event', message: 'Este boleto pertenece a otro evento.' });
+  }
+
+  if (data.checked_in) {
+    return res.status(200).json({ status: 'already_checked_in', message: 'Ya ingresó al evento.', registration: data });
+  }
+
+  await supabase
+    .from('registrations')
+    .update({ checked_in: true, checked_in_at: new Date().toISOString() })
+    .eq('id', id);
+
+  return res.status(200).json({ status: 'success', message: '¡Acceso válido!', registration: data });
+});
+
+// ─────────────────────────────────────────────
 //  POST /v2/admin/events/:slug/resend-email
 // ─────────────────────────────────────────────
 app.post('/v2/admin/events/:slug/resend-email', requireAuth, async (req, res) => {
   const { slug } = req.params;
-  const { email } = req.body;
+  const { email, ticketIds } = req.body;   // ticketIds: optional array of specific IDs to resend
   if (!email) return res.status(400).json({ error: 'Email requerido.' });
 
   // Verify the event belongs to this user (or user is superadmin)
@@ -926,7 +962,7 @@ app.post('/v2/admin/events/:slug/resend-email', requireAuth, async (req, res) =>
   if (evErr || !event) return res.status(404).json({ error: 'Evento no encontrado.' });
 
   try {
-    const { data: registrations, error } = await supabase
+    let regQuery = supabase
       .from('registrations')
       .select('*')
       .eq('email', email)
@@ -934,8 +970,19 @@ app.post('/v2/admin/events/:slug/resend-email', requireAuth, async (req, res) =>
       .eq('payment_status', 'paid')
       .order('created_at', { ascending: true });
 
-    if (error || !registrations?.length) {
+    const { data: allRegistrations, error } = await regQuery;
+
+    if (error || !allRegistrations?.length) {
       return res.status(404).json({ error: 'No se encontraron boletos para este correo en este evento.' });
+    }
+
+    // If specific ticketIds provided, filter to only those; otherwise send all
+    const registrations = (ticketIds && ticketIds.length > 0)
+      ? allRegistrations.filter(r => ticketIds.includes(r.id))
+      : allRegistrations;
+
+    if (!registrations.length) {
+      return res.status(404).json({ error: 'No se encontraron los boletos indicados.' });
     }
 
     const { name, student_name } = registrations[0];
