@@ -239,31 +239,41 @@ app.post('/upload', requireAuth, upload.single('file'), async (req, res) => {
 });
 
 // POST /auth/invite — superadmin invites a new promoter
+// Uses our own HMAC-signed invite token so the user never needs to reach Supabase directly
 app.post('/auth/invite', requireAuth, requireSuperAdmin, async (req, res) => {
   const { email } = req.body;
   if (!email) return res.status(400).json({ error: 'Email requerido.' });
 
-  // Generate invite link — we send our own email via Resend instead of Supabase default
-  const { data: linkData, error } = await supabase.auth.admin.generateLink({
-    type: 'invite',
-    email,
-    options: { redirectTo: 'https://colectivo.live/set-password' }
-  });
-
-  if (error) {
-    console.error('Invite error:', error);
-    const msg =
-      error.message?.toLowerCase().includes('already registered') ||
-      error.message?.toLowerCase().includes('already been invited') ||
-      error.code === 'email_exists'
-        ? 'Este correo ya tiene una cuenta en Colectivo.'
-        : `Error: ${error.message || 'desconocido'}`;
-    return res.status(500).json({ error: msg });
-  }
-
-  const inviteUrl = linkData.properties.action_link;
-
   try {
+    // Create the user directly (email confirmed, no password yet)
+    const { data: userData, error: createErr } = await supabase.auth.admin.createUser({
+      email,
+      email_confirm: true
+    });
+
+    if (createErr) {
+      const msg =
+        createErr.message?.toLowerCase().includes('already been registered') ||
+        createErr.message?.toLowerCase().includes('already registered')
+          ? 'Este correo ya tiene una cuenta en Colectivo.'
+          : `Error: ${createErr.message || 'desconocido'}`;
+      return res.status(500).json({ error: msg });
+    }
+
+    const uid = userData.user.id;
+
+    // Ensure a profile row exists (role defaults to promoter)
+    await supabase.from('profiles').upsert({ id: uid, role: 'promoter' }, { onConflict: 'id', ignoreDuplicates: true });
+
+    // Generate expiring HMAC invite token — no Supabase URL needed
+    const exp = Date.now() + 24 * 60 * 60 * 1000; // 24 hours
+    const sig = crypto.createHmac('sha256', QR_SECRET)
+      .update(`${uid}|${email}|${exp}`)
+      .digest('hex')
+      .slice(0, 32);
+
+    const inviteUrl = `https://colectivo.live/set-password?uid=${uid}&exp=${exp}&sig=${sig}`;
+
     await resend.emails.send({
       from: process.env.RESEND_FROM_EMAIL,
       to: email,
@@ -310,12 +320,81 @@ app.post('/auth/invite', requireAuth, requireSuperAdmin, async (req, res) => {
 </body>
 </html>`
     });
-  } catch (emailErr) {
-    console.error('Resend invite error:', emailErr);
-    return res.status(500).json({ error: 'Error al enviar el correo de invitación.' });
+
+    return res.status(200).json({ success: true, email });
+
+  } catch (err) {
+    console.error('Invite error:', err);
+    return res.status(500).json({ error: 'Error al enviar la invitación.' });
+  }
+});
+
+// GET /auth/invite-info — returns email for invite form display (validates token first)
+app.get('/auth/invite-info', async (req, res) => {
+  const { uid, exp, sig } = req.query;
+  if (!uid || !exp || !sig) return res.status(400).json({ error: 'Datos incompletos.' });
+  if (Date.now() > parseInt(exp)) return res.status(400).json({ error: 'Enlace expirado.' });
+
+  const { data: { user }, error } = await supabase.auth.admin.getUserById(uid);
+  if (error || !user) return res.status(404).json({ error: 'No encontrado.' });
+
+  const expected = crypto.createHmac('sha256', QR_SECRET)
+    .update(`${uid}|${user.email}|${exp}`).digest('hex').slice(0, 32);
+  let valid = false;
+  try { valid = crypto.timingSafeEqual(Buffer.from(sig), Buffer.from(expected)); } catch { valid = false; }
+  if (!valid) return res.status(401).json({ error: 'Token inválido.' });
+
+  return res.json({ email: user.email });
+});
+
+// POST /auth/complete-invite — new user sets password via HMAC invite token
+app.post('/auth/complete-invite', async (req, res) => {
+  const { uid, exp, sig, password } = req.body;
+  if (!uid || !exp || !sig || !password) {
+    return res.status(400).json({ error: 'Datos incompletos.' });
+  }
+  if (password.length < 8) {
+    return res.status(400).json({ error: 'La contraseña debe tener al menos 8 caracteres.' });
+  }
+  if (Date.now() > parseInt(exp)) {
+    return res.status(400).json({ error: 'El enlace de invitación ha expirado. Pide un nuevo enlace.' });
   }
 
-  return res.status(200).json({ success: true, email });
+  // Fetch user to get email for signature validation
+  const { data: { user }, error: userErr } = await supabase.auth.admin.getUserById(uid);
+  if (userErr || !user) return res.status(404).json({ error: 'Usuario no encontrado.' });
+
+  // Validate HMAC signature
+  const expected = crypto.createHmac('sha256', QR_SECRET)
+    .update(`${uid}|${user.email}|${exp}`)
+    .digest('hex')
+    .slice(0, 32);
+
+  let valid = false;
+  try { valid = crypto.timingSafeEqual(Buffer.from(sig), Buffer.from(expected)); } catch { valid = false; }
+  if (!valid) return res.status(401).json({ error: 'Token de invitación inválido.' });
+
+  // Set the password via admin API
+  const { error: updateErr } = await supabase.auth.admin.updateUserById(uid, { password });
+  if (updateErr) {
+    console.error('Set password error:', updateErr);
+    return res.status(500).json({ error: 'Error al establecer la contraseña.' });
+  }
+
+  // Sign them in immediately so they land on the dashboard
+  const { data: session, error: signInErr } = await supabaseAnon.auth.signInWithPassword({
+    email: user.email, password
+  });
+  if (signInErr) return res.status(500).json({ error: 'Contraseña guardada, pero error al iniciar sesión. Intenta hacer login.' });
+
+  const { data: profile } = await supabase.from('profiles').select('role').eq('id', uid).single();
+
+  return res.status(200).json({
+    success: true,
+    token: session.session.access_token,
+    refresh_token: session.session.refresh_token,
+    user: { id: uid, email: user.email, role: profile?.role || 'promoter' }
+  });
 });
 
 // ─────────────────────────────────────────────
@@ -467,7 +546,100 @@ app.post('/create-checkout', async (req, res) => {
 });
 
 // ─────────────────────────────────────────────
-//  POST /confirm-payment
+//  SHARED: fulfillOrder — create tickets + send email
+//  Called by both the webhook and /confirm-payment fallback
+// ─────────────────────────────────────────────
+async function fulfillOrder(metadata) {
+  const { registrationIds, name, student_name, email, phone, quantity, event_slug } = metadata;
+  const ids = registrationIds.split(',');
+  const qty = parseInt(quantity) || 1;
+  const finalSlug = event_slug || 'caballeros-aniversario';
+
+  // Idempotency: bail out if already fulfilled
+  const { data: existing } = await supabase
+    .from('registrations').select('payment_status').eq('id', ids[0]).single();
+  if (existing?.payment_status === 'paid') {
+    return { alreadyConfirmed: true, name, email, quantity: qty };
+  }
+
+  const qrCodes = [], attachments = [], insertRows = [];
+
+  for (let i = 0; i < ids.length; i++) {
+    const ticketId = ids[i];
+    const qrPayload = signTicket(ticketId, finalSlug);
+    const [qrDataURL, qrBuffer] = await Promise.all([
+      QRCode.toDataURL(qrPayload, { width: 300, margin: 2, color: { dark: '#080808', light: '#ffffff' } }),
+      QRCode.toBuffer(qrPayload, { width: 300, margin: 2, color: { dark: '#080808', light: '#ffffff' } })
+    ]);
+    qrCodes.push({ id: ticketId, qrDataURL });
+    attachments.push({
+      filename: qty > 1 ? `ticket-${i + 1}-de-${qty}.png` : 'ticket.png',
+      content: qrBuffer,
+      contentType: 'image/png'
+    });
+    insertRows.push({
+      id: ticketId, name, student_name,
+      email, phone: phone || null,
+      payment_status: 'paid',
+      event_slug: finalSlug
+    });
+  }
+
+  const { error: insertError } = await supabase.from('registrations').insert(insertRows);
+  if (insertError) throw new Error(`Supabase insert: ${insertError.message}`);
+
+  const eventDisplay = student_name.split(' — ')[0] || 'Colectivo';
+  await resend.emails.send({
+    from: process.env.RESEND_FROM_EMAIL,
+    to: email,
+    subject: `🎟️ ${qty > 1 ? `Tus ${qty} accesos` : 'Tu acceso'} — ${eventDisplay}`,
+    html: buildEmailHTML({ name, student_name, qrCodes }),
+    attachments
+  });
+
+  return { name, email, quantity: qty };
+}
+
+// ─────────────────────────────────────────────
+//  POST /stripe-webhook  — verified Stripe events
+// ─────────────────────────────────────────────
+app.post('/stripe-webhook', express.raw({ type: 'application/json' }), async (req, res) => {
+  const sig = req.headers['stripe-signature'];
+  const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
+
+  if (!webhookSecret) {
+    console.error('STRIPE_WEBHOOK_SECRET not set');
+    return res.status(500).send('Webhook secret not configured');
+  }
+
+  let event;
+  try {
+    event = stripe.webhooks.constructEvent(req.body, sig, webhookSecret);
+  } catch (err) {
+    console.error('Webhook signature verification failed:', err.message);
+    return res.status(400).send(`Webhook error: ${err.message}`);
+  }
+
+  if (event.type === 'checkout.session.completed') {
+    const session = event.data.object;
+    if (session.payment_status === 'paid' && session.metadata?.registrationIds) {
+      try {
+        await fulfillOrder(session.metadata);
+        console.log(`✅ Webhook fulfilled order for session ${session.id}`);
+      } catch (err) {
+        console.error('Webhook fulfillOrder error:', err.message);
+        return res.status(500).send('Fulfillment failed');
+      }
+    }
+  }
+
+  res.json({ received: true });
+});
+
+// ─────────────────────────────────────────────
+//  POST /confirm-payment  — client-side fallback
+//  Webhook is the primary path; this handles the race where
+//  the user lands on success.html before the webhook fires
 // ─────────────────────────────────────────────
 app.post('/confirm-payment', async (req, res) => {
   const { session_id } = req.body;
@@ -479,63 +651,8 @@ app.post('/confirm-payment', async (req, res) => {
       return res.status(400).json({ error: 'Pago no completado.' });
     }
 
-    const { registrationIds, name, student_name, email, phone, quantity, event_slug } = session.metadata;
-    const ids = registrationIds.split(',');
-    const qty = parseInt(quantity) || 1;
-
-    const { data: existing } = await supabase
-      .from('registrations')
-      .select('payment_status')
-      .eq('id', ids[0])
-      .single();
-
-    if (existing?.payment_status === 'paid') {
-      return res.status(200).json({ success: true, alreadyConfirmed: true, name, email, quantity: qty });
-    }
-
-    const qrCodes = [];
-    const attachments = [];
-    const insertRows = [];
-
-    const finalSlug = event_slug || 'caballeros-aniversario';
-    for (let i = 0; i < ids.length; i++) {
-      const ticketId = ids[i];
-      const qrPayload = signTicket(ticketId, finalSlug);
-      const [qrDataURL, qrBuffer] = await Promise.all([
-        QRCode.toDataURL(qrPayload, { width: 300, margin: 2, color: { dark: '#080808', light: '#ffffff' } }),
-        QRCode.toBuffer(qrPayload, { width: 300, margin: 2, color: { dark: '#080808', light: '#ffffff' } })
-      ]);
-
-      qrCodes.push({ id: ticketId, qrDataURL });
-      attachments.push({
-        filename: qty > 1 ? `ticket-${i + 1}-de-${qty}.png` : 'ticket.png',
-        content: qrBuffer,
-        contentType: 'image/png'
-      });
-      insertRows.push({
-        id: ticketId, name, student_name,
-        email, phone: phone || null,
-        payment_status: 'paid',
-        event_slug: finalSlug
-      });
-    }
-
-    const { error: insertError } = await supabase.from('registrations').insert(insertRows);
-    if (insertError) {
-      console.error('Supabase insert error:', insertError);
-      return res.status(500).json({ error: 'Error al guardar el registro.' });
-    }
-
-    const eventDisplay = student_name.split(' — ')[0] || 'Colectivo';
-    await resend.emails.send({
-      from: process.env.RESEND_FROM_EMAIL,
-      to: email,
-      subject: `🎟️ ${qty > 1 ? `Tus ${qty} accesos` : 'Tu acceso'} — ${eventDisplay}`,
-      html: buildEmailHTML({ name, student_name, qrCodes }),
-      attachments
-    });
-
-    return res.status(200).json({ success: true, name, email, quantity: qty });
+    const result = await fulfillOrder(session.metadata);
+    return res.status(200).json({ success: true, ...result });
 
   } catch (err) {
     console.error('Confirm error:', err);
